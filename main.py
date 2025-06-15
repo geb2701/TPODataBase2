@@ -2,6 +2,8 @@ from fastapi import FastAPI, APIRouter, HTTPException, Body
 from pydantic import BaseModel
 from typing import List, Optional
 from Controllers.UsuarioController import usuarios_router
+from Controllers.EquipoController import equipos_router
+from Controllers.ProcesoSeleccionController import procesos_router
 
 app = FastAPI()
 
@@ -287,3 +289,5 @@ app.include_router(matches_router)
 app.include_router(inscripciones_router)
 app.include_router(cursos_router)
 app.include_router(recomendaciones_router)
+app.include_router(equipos_router)
+app.include_router(procesos_router)
