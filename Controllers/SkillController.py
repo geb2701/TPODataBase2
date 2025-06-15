@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List
 
-from Dtos.Skill import SkillFilterDto
+from Dtos.Skill.SkillFilterDto import SkillFilterDto 
 from Dtos.Skill.SkillCreateDto import SkillCreateDto
 from Dtos.Skill.Skill import Skill
 from Repositories.SkillRepository import (
