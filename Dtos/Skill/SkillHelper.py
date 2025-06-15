@@ -1,10 +1,10 @@
-from enum import Enum
+from enum import Enum, IntEnum
 
 class TipoSkill(str, Enum):
     tecnica = "tecnica"
     blanda = "blanda"
 
-class Nivelkill(str, Enum):
-    basica = "basica"
-    media = "media"
-    avanzada = "avanzada"
+class NivelSkill(IntEnum):
+    basica = 1
+    media = 2
+    avanzada = 3

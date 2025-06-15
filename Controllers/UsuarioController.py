@@ -2,9 +2,10 @@ from fastapi import APIRouter, HTTPException
 from typing import List
 
 from Dtos.Usuario.UsuarioCreateDto import UsuarioCreateDto
-from Dtos.Usuario.UsuarioDto import UsuarioDto
+from Dtos.Usuario.Usuario import Usuario
 from Dtos.Usuario.UsuarioUpdateDto import UsuarioUpdateDto
 from Dtos.Usuario.ReferirDto import ReferirDto
+from Dtos.Usuario.AgregarSkillDto import AgregarSkillDto
 
 from Repositories.UsuarioRepository import (
     crear_usuario,
@@ -15,22 +16,22 @@ from Repositories.UsuarioRepository import (
 
 usuarios_router = APIRouter(prefix="/usuarios", tags=["Usuarios"])
 
-@usuarios_router.post("/", response_model=UsuarioDto)
+@usuarios_router.post("/", response_model=Usuario)
 def crear_usuario_endpoint(usuario: UsuarioCreateDto):
     return crear_usuario(usuario.model_dump())
 
-@usuarios_router.get("/", response_model=List[UsuarioDto])
+@usuarios_router.get("/", response_model=List[Usuario])
 def listar_usuarios_endpoint():
     return listar_usuarios()
 
-@usuarios_router.get("/{usuario_id}", response_model=UsuarioDto)
+@usuarios_router.get("/{usuario_id}", response_model=Usuario)
 def obtener_usuario_endpoint(usuario_id: str):
     usuario = obtener_usuario(usuario_id)
     if not usuario:
         raise HTTPException(404, "Usuario no encontrado")
     return usuario
 
-@usuarios_router.patch("/{usuario_id}", response_model=UsuarioDto)
+@usuarios_router.patch("/{usuario_id}", response_model=Usuario)
 def actualizar_usuario_endpoint(usuario_id: str, usuario_update: UsuarioUpdateDto):
     update_data = {k: v for k, v in usuario_update.model_dump(exclude_unset=True).items() if v is not None}
     usuario = actualizar_usuario(usuario_id, update_data)
@@ -62,3 +63,24 @@ def referir_usuario(data: ReferirDto):
     actualizar_usuario(data.referido_id, {"referido": referido["referido"]})
 
     return {"message": "Usuario referido correctamente"}
+
+@usuarios_router.patch("/añadir_skill")
+def referir_usuario(data: AgregarSkillDto):
+    usuario = obtener_usuario(data.usuario_id)
+
+    if not usuario:
+        raise HTTPException(404, "Usuario no encontrado")
+
+    # Inicializar lista de skills si no existe
+    usuario.setdefault("skills", [])
+
+    # Validar si ya existe la skill
+    if data.skill in usuario["skills"]:
+        return {"message": "La skill ya existe"}
+
+    # Añadir la skill
+    usuario["skills"].append(data.skill)
+
+    actualizar_usuario(data.usuario_id, {"skills": usuario["skills"]})
+
+    return {"message": "Skill añadida correctamente"}
