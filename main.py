@@ -6,32 +6,6 @@ from Controllers.UsuarioController import usuarios_router
 app = FastAPI()
 
 # --- MODELOS ---
-
-class Skill(BaseModel):
-    nombre: str
-    nivel: Optional[str] = None
-
-class User(BaseModel):
-    id: Optional[str]
-    nombre: str
-    email: str
-    skills: Optional[List[Skill]] = []
-    procesoSeleccion: Optional[List[Skill]]
-    certificaciones: Optional[List[Skill]]
-    mentores: Optional[List[Skill]]
-    alumnos: Optional[List[Skill]]
-    recomendado: Optional[List[Skill]] #a quien recomienda
-    referido: Optional[List[Skill]] #quien lo recomienda
-
-class UsuarioCreate(User):
-    nombre: str
-    email: str
-
-class UsuarioUpdate(BaseModel):
-    nombre: Optional[str]
-    email: Optional[str]
-    skills: Optional[List[Skill]]
-
 class Entrevista(BaseModel):
     fecha: str
     comentarios: Optional[str] = None
@@ -83,38 +57,6 @@ db_inscripciones = {}
 db_cursos = {}
 db_recomendaciones = {}
 
-"""
-@usuarios_router.get("/{usuario_id}/skills", response_model=List[Skill])
-def listar_skills(usuario_id: str):
-    usuario = db_usuarios.get(usuario_id)
-    if not usuario:
-        raise HTTPException(404, "Usuario no encontrado")
-    return usuario.get("skills", [])
-
-@usuarios_router.post("/{usuario_id}/skills", response_model=Skill)
-def añadir_skill(usuario_id: str, skill: Skill):
-    usuario = db_usuarios.get(usuario_id)
-    if not usuario:
-        raise HTTPException(404, "Usuario no encontrado")
-    skills = usuario.get("skills", [])
-    skills.append(skill.dict())
-    usuario["skills"] = skills
-    db_usuarios[usuario_id] = usuario
-    return skill
-
-@usuarios_router.delete("/{usuario_id}/skills/{skill_nombre}")
-def eliminar_skill(usuario_id: str, skill_nombre: str):
-    usuario = db_usuarios.get(usuario_id)
-    if not usuario:
-        raise HTTPException(404, "Usuario no encontrado")
-    skills = usuario.get("skills", [])
-    nueva_lista = [s for s in skills if s["nombre"].lower() != skill_nombre.lower()]
-    if len(skills) == len(nueva_lista):
-        raise HTTPException(404, "Skill no encontrada")
-    usuario["skills"] = nueva_lista
-    db_usuarios[usuario_id] = usuario
-    return {"mensaje": "Skill eliminada"}
-"""
 # --- ENTREVISTAS ---
 
 @entrevistas_router.post("/{usuario_id}", response_model=Entrevista)
