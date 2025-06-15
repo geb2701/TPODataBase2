@@ -9,6 +9,6 @@ class Usuario(BaseModel):
     skills: Optional[List[str]] = []
     procesoSeleccion: Optional[List[str]] = []
     certificaciones: Optional[List[str]] = []
-    alumnos: Optional[List[Usuario]] = []
-    recomendado: Optional[List[Usuario]] = []  # a quien recomienda
-    referido: Optional[List[Usuario]] = []     # quien lo recomienda
+    alumnos: Optional[List[str]] = []
+    recomendado: Optional[List[str]] = []  # a quien recomienda
+    referido: Optional[List[str]] = []     # quien lo recomienda

@@ -87,4 +87,18 @@ def actualizar_usuario(usuario_id, update_data):
                     recomendador_id=usuario_id,
                     recomendado_id=recomendado_id
                 )
+        
+        if "skills" in update_data and isinstance(update_data["skills"], list):
+            for skill_id in update_data["skills"]:
+                session.run(
+                    """
+                    MERGE (s:Skill {id: $skill_id})
+                    WITH s
+                    MATCH (u:Usuario {id: $usuario_id})
+                    MERGE (u)-[:POSEE]->(s)
+                    """,
+                    usuario_id=usuario_id,
+                    skill_id=skill_id
+                )
+                
     return usuario_dto

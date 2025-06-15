@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List
 
+from Dtos.Skill import SkillFilterDto
 from Dtos.Skill.SkillCreateDto import SkillCreateDto
 from Dtos.Skill.Skill import Skill
 from Repositories.SkillRepository import (
@@ -21,8 +22,20 @@ def crear_skill_endpoint(skill: SkillCreateDto):
         raise HTTPException(status_code=500, detail=str(e))
 
 @skills_router.get("/", response_model=List[Skill])
-def listar_skills_endpoint():
-    return listar_skills()
+@skills_router.get("/", response_model=List[Skill])
+def listar_skills_endpoint(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(10, ge=1, le=100),
+    filtros: SkillFilterDto = Depends()
+):
+    try:
+        skills = listar_skills()
+        # Filtrado automático usando los campos no nulos del DTO
+        for field, value in filtros.model_dump(exclude_none=True).items():
+            skills = [s for s in skills if s.get(field) == value]
+        return skills[skip:skip + limit]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @skills_router.get("/{skill_id}", response_model=Skill)
 def obtener_skill_endpoint(skill_id: str):

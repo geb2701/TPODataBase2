@@ -20,6 +20,7 @@ def crear_skill(skill_dict):
     })
     if existente:
         raise ValueError("Ya existe una skill con el mismo nombre y nivel.")
+    
     result = skills_collection.insert_one(skill_dict)
     skill_dict["id"] = str(result.inserted_id)
     with neo4j.session() as session:
