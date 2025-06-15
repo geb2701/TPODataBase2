@@ -7,6 +7,7 @@ from Controllers.EquipoController import equipos_router
 from Controllers.ProcesoSeleccionController import procesos_router
 from Controllers.EmpresaController import empresa_router
 from Controllers.HistorialController import historial_router
+from Controllers.OfertaController import oferta_router
 
 app = FastAPI()
 """
@@ -299,4 +300,5 @@ app.include_router(recomendaciones_router)
 app.include_router(equipos_router)
 app.include_router(procesos_router)
 app.include_router(historial_router)
+app.include_router(oferta_router)
 """
