@@ -1,12 +1,13 @@
 from fastapi import FastAPI, APIRouter, HTTPException, Body
 from pydantic import BaseModel
 from typing import List, Optional
+from Controllers.SkillController import skills_router
 from Controllers.UsuarioController import usuarios_router
 from Controllers.EquipoController import equipos_router
 from Controllers.ProcesoSeleccionController import procesos_router
 
 app = FastAPI()
-
+"""
 # --- MODELOS ---
 class Entrevista(BaseModel):
     fecha: str
@@ -280,8 +281,11 @@ def eliminar_recomendacion(rec_id: str):
     return {"mensaje": "Recomendación eliminada"}
 
 # --- INCLUIMOS ROUTERS EN LA APP ---
-
+"""
 app.include_router(usuarios_router)
+app.include_router(skills_router)
+
+"""
 app.include_router(entrevistas_router)
 app.include_router(empresas_router)
 app.include_router(busquedas_router)
@@ -291,3 +295,4 @@ app.include_router(cursos_router)
 app.include_router(recomendaciones_router)
 app.include_router(equipos_router)
 app.include_router(procesos_router)
+"""

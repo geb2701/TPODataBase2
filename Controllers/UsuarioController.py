@@ -32,7 +32,7 @@ def obtener_usuario_endpoint(usuario_id: str):
 
 @usuarios_router.patch("/{usuario_id}", response_model=UsuarioDto)
 def actualizar_usuario_endpoint(usuario_id: str, usuario_update: UsuarioUpdateDto):
-    update_data = {k: v for k, v in usuario_update.dict(exclude_unset=True).items() if v is not None}
+    update_data = {k: v for k, v in usuario_update.model_dump(exclude_unset=True).items() if v is not None}
     usuario = actualizar_usuario(usuario_id, update_data)
     if not usuario:
         raise HTTPException(404, "Usuario no encontrado")
@@ -40,5 +40,25 @@ def actualizar_usuario_endpoint(usuario_id: str, usuario_update: UsuarioUpdateDt
 
 @usuarios_router.patch("/referir")
 def referir_usuario(data: ReferirDto):
-    # Lógica para referir usuario si lo necesitas
+    recomendador = obtener_usuario(data.recomendador_id)
+    referido = obtener_usuario(data.referido_id)
+
+    if not recomendador or not referido:
+        raise HTTPException(404, "Uno o ambos usuarios no existen")
+
+    # Inicializar listas si no existen
+    recomendador.setdefault("recomendado", [])
+    referido.setdefault("referido", [])
+
+    # Validar si ya existe la relación
+    if data.referido_id in recomendador["recomendado"]:
+        return {"message": "La relación ya existe"}
+
+    # Añadir la relación
+    recomendador["recomendado"].append(data.referido_id)
+    referido["referido"].append(data.recomendador_id)
+
+    actualizar_usuario(data.recomendador_id, {"recomendado": recomendador["recomendado"]})
+    actualizar_usuario(data.referido_id, {"referido": referido["referido"]})
+
     return {"message": "Usuario referido correctamente"}

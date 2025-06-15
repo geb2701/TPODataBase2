@@ -2,10 +2,14 @@ from pymongo import MongoClient
 from bson import ObjectId
 from neo4j import GraphDatabase
 
-mongo = MongoClient("mongodb+srv://TPODataBase2:WcTpJOR9ZuFPxNmW@tpodatabase2.dvx531v.mongodb.net/")
-db = mongo["talentum"]
-usuarios_collection = db["usuarios"]
+from Services import DatabaseConfig
 
+db_config = DatabaseConfig.DatabaseConfig()
+mongo_db = db_config.get_mongo_db()
+neo4j = db_config.get_neo4j_driver()
+usuarios_collection = mongo_db["usuarios"]
+
+"""
 try:
     neo4j = GraphDatabase.driver(
         "neo4j+s://bd136a15.databases.neo4j.io",
@@ -21,7 +25,7 @@ neo4j = GraphDatabase.driver(
     auth=("neo4j", "0czpIif4DzPnO1prJ8QjyfSBHut1LKTo2ZeX-Y4rndQ")
 )
 neo4j.verify_connectivity()
-
+"""
 
 def usuario_mongo_to_dto(usuario):
     usuario["id"] = str(usuario["_id"])
@@ -72,4 +76,15 @@ def actualizar_usuario(usuario_id, update_data):
             id=usuario_id,
             props={k: v for k, v in update_data.items() if v is not None}
         )
+        
+        if "recomendado" in update_data and isinstance(update_data["recomendado"], list):
+            for recomendado_id in update_data["recomendado"]:
+                session.run(
+                    """
+                    MATCH (a:Usuario {id: $recomendador_id}), (b:Usuario {id: $recomendado_id})
+                    MERGE (a)-[:REFIERE_A]->(b)
+                    """,
+                    recomendador_id=usuario_id,
+                    recomendado_id=recomendado_id
+                )
     return usuario_dto
