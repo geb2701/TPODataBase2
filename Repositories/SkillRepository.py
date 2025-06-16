@@ -1,6 +1,8 @@
+from datetime import datetime
 from pymongo import MongoClient
 from bson import ObjectId
 
+from Dtos import Historial
 from Services import DatabaseConfig
 
 db_config = DatabaseConfig.DatabaseConfig()
@@ -14,6 +16,11 @@ def skill_mongo_to_model(skill):
     return skill
 
 def crear_skill(skill_dict):
+    historial = skill_dict.get("historial", [])
+    hoy = datetime.today()
+    historial.append(Historial(fecha=hoy, mensage="Usuario creado").model_dump())
+    skill_dict["historial"] = historial
+
     existente = skills_collection.find_one({
         "nombre": skill_dict.get("nombre"),
         "nivel": skill_dict.get("nivel")
@@ -53,12 +60,28 @@ def actualizar_skill(skill_id, update_data):
         })
         if existente:
             raise ValueError("Ya existe otra skill con el mismo nombre y nivel.")
+
+    skill = skills_collection.find_one({"_id": ObjectId(skill_id)})
+    if not skill:
+        return None
+
+    historial = skill.get("historial", [])
+    hoy = datetime.today()
+    for campo, nuevo_valor in update_data.items():
+        valor_anterior = skill.get(campo, None)
+        if valor_anterior != nuevo_valor:
+            mensaje = f"Se cambió '{campo}' de '{valor_anterior}' a '{nuevo_valor}'"
+            historial.append(Historial(fecha=hoy, mensage=mensaje).model_dump())
+    update_data["historial"] = historial
+
     result = skills_collection.update_one(
         {"_id": ObjectId(skill_id)},
         {"$set": update_data}
     )
+
     if result.matched_count == 0:
         return None
+
     skill = skills_collection.find_one({"_id": ObjectId(skill_id)})
     with neo4j.session() as session:
         session.run(
@@ -67,7 +90,7 @@ def actualizar_skill(skill_id, update_data):
             SET s += $props
             """,
             id=skill_id,
-            props={k: v for k, v in update_data.items() if v is not None}
+            props={k: v for k, v in update_data.items() if v is not None and k != "historial"}
         )
     return skill_mongo_to_model(skill)
 

@@ -33,6 +33,8 @@ def listar_skills_endpoint(
         for field, value in filtros.model_dump(exclude_none=True).items():
             skills = [s for s in skills if s.get(field) == value]
         return skills[skip:skip + limit]
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
