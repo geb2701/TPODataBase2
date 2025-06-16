@@ -1,3 +1,4 @@
+from Dtos import Historial
 from Services.DatabaseConfig import DatabaseConfig
 from Services.HistorialService import HistorialService
 from bson import ObjectId
@@ -6,26 +7,36 @@ from datetime import datetime
 db_config = DatabaseConfig()
 empresa_collection = db_config.get_mongo_db()["empresas"]
 
-class EmpresaService:
+def mongo_to_model(item):
+    item["id"] = str(item["_id"])
+    item.pop("_id", None)
+    return item
 
+class EmpresaService:
     @staticmethod
     def crear(data):
+        historial = data.get("historial", [])
+        hoy = datetime.today()
+        historial.append(Historial(fecha=hoy, mensage="Usuario creado").model_dump())
+        data["historial"] = historial
+
         result = empresa_collection.insert_one(data)
-        empresa_id = str(result.inserted_id)
+        data["id"] = str(result.inserted_id)
 
-        HistorialService.registrar({
-            "usuario_id": data.get("usuario_id", "sistema"),
-            "entidad_id": empresa_id,
-            "tipo": "empresa",
-            "cambio": "Empresa creada",
-            "fecha": datetime.now()
-        })
+        with db_config.neo4j.session() as session:
+            session.run(
+                """
+                CREATE (u:Empresa {id: $id, nombre: $nombre})
+                """,
+                id=data["id"],
+                nombre=data.get("nombre", "")
+            )
 
-        return {**data, "id": empresa_id}
+        return data
 
     @staticmethod
     def listar():
-        return [{**e, "id": str(e["_id"])} for e in empresa_collection.find()]
+        return [mongo_to_model(e) for e in empresa_collection.find()]
 
     @staticmethod
     def obtener_por_id(empresa_id: str):
@@ -37,25 +48,8 @@ class EmpresaService:
     @staticmethod
     def actualizar(empresa_id: str, data):
         empresa_collection.update_one({"_id": ObjectId(empresa_id)}, {"$set": data})
-
-        HistorialService.registrar({
-            "usuario_id": data.get("usuario_id", "sistema"),
-            "entidad_id": empresa_id,
-            "tipo": "empresa",
-            "cambio": "Empresa actualizada",
-            "fecha": datetime.now()
-        })
-
         return EmpresaService.obtener_por_id(empresa_id)
 
     @staticmethod
     def eliminar(empresa_id: str):
         empresa_collection.delete_one({"_id": ObjectId(empresa_id)})
-
-        HistorialService.registrar({
-            "usuario_id": "sistema",
-            "entidad_id": empresa_id,
-            "tipo": "empresa",
-            "cambio": "Empresa eliminada",
-            "fecha": datetime.now()
-        })
