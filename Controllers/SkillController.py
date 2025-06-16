@@ -22,7 +22,6 @@ def crear_skill_endpoint(skill: SkillCreateDto):
         raise HTTPException(status_code=500, detail=str(e))
 
 @skills_router.get("/", response_model=List[Skill])
-@skills_router.get("/", response_model=List[Skill])
 def listar_skills_endpoint(
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=100),
@@ -34,6 +33,8 @@ def listar_skills_endpoint(
         for field, value in filtros.model_dump(exclude_none=True).items():
             skills = [s for s in skills if s.get(field) == value]
         return skills[skip:skip + limit]
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

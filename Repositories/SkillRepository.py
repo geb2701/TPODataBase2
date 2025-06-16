@@ -1,6 +1,8 @@
+from datetime import datetime
 from pymongo import MongoClient
 from bson import ObjectId
 
+from Dtos import Historial
 from Services import DatabaseConfig
 
 db_config = DatabaseConfig.DatabaseConfig()
@@ -8,12 +10,17 @@ mongo_db = db_config.get_mongo_db()
 neo4j = db_config.get_neo4j_driver()
 skills_collection = mongo_db["skills"]
 
-def skill_mongo_to_dto(skill):
+def skill_mongo_to_model(skill):
     skill["id"] = str(skill["_id"])
     skill.pop("_id", None)
     return skill
 
 def crear_skill(skill_dict):
+    historial = skill_dict.get("historial", [])
+    hoy = datetime.today()
+    historial.append(Historial(fecha=hoy, mensage="Usuario creado").model_dump())
+    skill_dict["historial"] = historial
+
     existente = skills_collection.find_one({
         "nombre": skill_dict.get("nombre"),
         "nivel": skill_dict.get("nivel")
@@ -36,12 +43,12 @@ def crear_skill(skill_dict):
 
 def listar_skills():
     skills = list(skills_collection.find())
-    return [skill_mongo_to_dto(s) for s in skills]
+    return [skill_mongo_to_model(s) for s in skills]
 
 def obtener_skill(skill_id):
     skill = skills_collection.find_one({"_id": ObjectId(skill_id)})
     if skill:
-        return skill_mongo_to_dto(skill)
+        return skill_mongo_to_model(skill)
     return None
 
 def actualizar_skill(skill_id, update_data):
@@ -53,12 +60,28 @@ def actualizar_skill(skill_id, update_data):
         })
         if existente:
             raise ValueError("Ya existe otra skill con el mismo nombre y nivel.")
+
+    skill = skills_collection.find_one({"_id": ObjectId(skill_id)})
+    if not skill:
+        return None
+
+    historial = skill.get("historial", [])
+    hoy = datetime.today()
+    for campo, nuevo_valor in update_data.items():
+        valor_anterior = skill.get(campo, None)
+        if valor_anterior != nuevo_valor:
+            mensaje = f"Se cambió '{campo}' de '{valor_anterior}' a '{nuevo_valor}'"
+            historial.append(Historial(fecha=hoy, mensage=mensaje).model_dump())
+    update_data["historial"] = historial
+
     result = skills_collection.update_one(
         {"_id": ObjectId(skill_id)},
         {"$set": update_data}
     )
+
     if result.matched_count == 0:
         return None
+
     skill = skills_collection.find_one({"_id": ObjectId(skill_id)})
     with neo4j.session() as session:
         session.run(
@@ -67,9 +90,9 @@ def actualizar_skill(skill_id, update_data):
             SET s += $props
             """,
             id=skill_id,
-            props={k: v for k, v in update_data.items() if v is not None}
+            props={k: v for k, v in update_data.items() if v is not None and k != "historial"}
         )
-    return skill_mongo_to_dto(skill)
+    return skill_mongo_to_model(skill)
 
 def eliminar_skill(skill_id):
     result = skills_collection.delete_one({"_id": ObjectId(skill_id)})

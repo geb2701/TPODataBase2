@@ -21,6 +21,8 @@ usuarios_router = APIRouter(prefix="/usuarios", tags=["Usuarios"])
 def crear_usuario_endpoint(usuario: UsuarioCreateDto):
     try:
         return crear_usuario(usuario.model_dump())
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -36,6 +38,8 @@ def listar_usuarios_endpoint(
         for field, value in filtros.model_dump(exclude_none=True).items():
             usuarios = [u for u in usuarios if u.get(field) == value]
         return usuarios[skip:skip + limit]
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -46,6 +50,8 @@ def obtener_usuario_endpoint(usuario_id: str):
         if not usuario:
             raise HTTPException(404, "Usuario no encontrado")
         return usuario
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -58,5 +64,7 @@ def actualizar_usuario_endpoint(usuario_id: str, usuario_update: UsuarioUpdateDt
         if not usuario:
             raise HTTPException(404, "Usuario no encontrado")
         return usuario
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

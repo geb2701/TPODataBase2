@@ -6,7 +6,6 @@ from Controllers.UsuarioController import usuarios_router
 from Controllers.EquipoController import equipo_router
 from Controllers.ProcesoSeleccionController import procesos_router
 from Controllers.EmpresaController import empresa_router
-from Controllers.HistorialController import historial_router
 from Controllers.OfertaController import oferta_router
 from Controllers.SkillUsuarioController import skill_usuario_router
 from Controllers.ReferenciaUsuarioController import referencia_usuario_router
