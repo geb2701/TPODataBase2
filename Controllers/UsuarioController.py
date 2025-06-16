@@ -48,7 +48,7 @@ def obtener_usuario_endpoint(usuario_id: str):
         return usuario
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
+"""
 @usuarios_router.patch("/referir", response_model=str)
 def referir_usuario_endpoint(data: ReferirDto):
     try:
@@ -97,9 +97,9 @@ def añadir_skill_endpoint(data: AgregarSkillDto):
         return {"message": "Skill añadida correctamente"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
+    """
 
-@usuarios_router.patch("/{usuario_id:uuid}", response_model=Usuario)
+@usuarios_router.patch("/{usuario_id}", response_model=Usuario)
 def actualizar_usuario_endpoint(usuario_id: str, usuario_update: UsuarioUpdateDto):
     try:
         update_data = {k: v for k, v in usuario_update.model_dump(exclude_unset=True).items() if v is not None}

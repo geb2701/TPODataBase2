@@ -22,7 +22,6 @@ def crear_skill_endpoint(skill: SkillCreateDto):
         raise HTTPException(status_code=500, detail=str(e))
 
 @skills_router.get("/", response_model=List[Skill])
-@skills_router.get("/", response_model=List[Skill])
 def listar_skills_endpoint(
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=100),

@@ -1,7 +1,8 @@
-from pymongo import MongoClient
+from datetime import date
+from datetime import date, datetime
 from bson import ObjectId
-from neo4j import GraphDatabase
 
+from Dtos.Historial import Historial
 from Services import DatabaseConfig
 
 db_config = DatabaseConfig.DatabaseConfig()
@@ -9,30 +10,17 @@ mongo_db = db_config.get_mongo_db()
 neo4j = db_config.get_neo4j_driver()
 usuarios_collection = mongo_db["usuarios"]
 
-"""
-try:
-    neo4j = GraphDatabase.driver(
-        "neo4j+s://bd136a15.databases.neo4j.io",
-        auth=("neo4j", "0czpIif4DzPnO1prJ8QjyfSBHut1LKTo2ZeX-Y4rndQ")
-    )
-    neo4j.verify_connectivity()
-except Exception as e:
-    print(f"Error conectando a Neo4j: {e}")
-    neo4j = None
-
-neo4j = GraphDatabase.driver(
-    "neo4j+s://bd136a15.databases.neo4j.io",
-    auth=("neo4j", "0czpIif4DzPnO1prJ8QjyfSBHut1LKTo2ZeX-Y4rndQ")
-)
-neo4j.verify_connectivity()
-"""
-
-def usuario_mongo_to_dto(usuario):
+def usuario_mongo_to_model(usuario):
     usuario["id"] = str(usuario["_id"])
     usuario.pop("_id", None)
     return usuario
 
 def crear_usuario(usuario_dict):
+    historial = usuario_dict.get("historial", [])
+    hoy = datetime.today()
+    historial.append(Historial(fecha=hoy, mensage="Usuario creado").model_dump())
+    usuario_dict["historial"] = historial
+
     result = usuarios_collection.insert_one(usuario_dict)
     usuario_dict["id"] = str(result.inserted_id)
     # Crear nodo en Neo4j
@@ -49,32 +37,46 @@ def crear_usuario(usuario_dict):
 
 def listar_usuarios():
     usuarios = list(usuarios_collection.find())
-    return [usuario_mongo_to_dto(u) for u in usuarios]
+    return [usuario_mongo_to_model(u) for u in usuarios]
 
 def obtener_usuario(usuario_id):
     usuario = usuarios_collection.find_one({"_id": ObjectId(usuario_id)})
     if usuario:
-        return usuario_mongo_to_dto(usuario)
+        return usuario_mongo_to_model(usuario)
     return None
 
 def actualizar_usuario(usuario_id, update_data):
+    usuario = usuarios_collection.find_one({"_id": ObjectId(usuario_id)})
+    if not usuario:
+        return None
+
+    historial = usuario.get("historial", [])
+    hoy = datetime.today()
+    for campo, nuevo_valor in update_data.items():
+        valor_anterior = usuario.get(campo, None)
+        mensaje = f"Se cambió '{campo}' de '{valor_anterior}' a '{nuevo_valor}'"
+        historial.append(Historial(fecha=hoy, mensage=mensaje).model_dump())
+    update_data["historial"] = historial
+
     result = usuarios_collection.update_one(
         {"_id": ObjectId(usuario_id)},
         {"$set": update_data}
     )
     if result.matched_count == 0:
         return None
+
     usuario = usuarios_collection.find_one({"_id": ObjectId(usuario_id)})
-    usuario_dto = usuario_mongo_to_dto(usuario)
+    usuario_dto = usuario_mongo_to_model(usuario)
     # Actualizar nodo en Neo4j
     with neo4j.session() as session:
+        props = {k: v for k, v in update_data.items() if v is not None and k != "historial"}
         session.run(
             """
             MATCH (u:Usuario {id: $id})
             SET u += $props
             """,
             id=usuario_id,
-            props={k: v for k, v in update_data.items() if v is not None}
+            props=props
         )
         
         if "recomendado" in update_data and isinstance(update_data["recomendado"], list):
