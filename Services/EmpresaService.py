@@ -6,6 +6,7 @@ from datetime import datetime
 
 db_config = DatabaseConfig()
 empresa_collection = db_config.get_mongo_db()["empresas"]
+neo4j = db_config.get_neo4j_driver()
 
 def mongo_to_model(item):
     item["id"] = str(item["_id"])
@@ -15,24 +16,41 @@ def mongo_to_model(item):
 class EmpresaService:
     @staticmethod
     def crear(data):
+        # Registrar historial en Mongo
         historial = data.get("historial", [])
         hoy = datetime.today()
-        historial.append(Historial(fecha=hoy, mensage="Usuario creado").model_dump())
+        historial.append(Historial(fecha=hoy, mensage="Empresa creada").model_dump())
         data["historial"] = historial
 
+        # Insertar en MongoDB
         result = empresa_collection.insert_one(data)
-        data["id"] = str(result.inserted_id)
+        empresa_id = str(result.inserted_id)
+        data["id"] = empresa_id
 
-        with db_config.neo4j.session() as session:
-            session.run(
-                """
-                CREATE (u:Empresa {id: $id, nombre: $nombre})
-                """,
-                id=data["id"],
-                nombre=data.get("nombre", "")
-            )
+        # Registrar en Neo4j
+        try:
+            with neo4j.session() as session:
+                session.run(
+                    """
+                    CREATE (e:Empresa {id: $id, nombre: $nombre})
+                    """,
+                    id=empresa_id,
+                    nombre=data.get("nombre", "")
+                )
+        except Exception as e:
+            print(f"⚠️ Error registrando empresa en Neo4j: {e}")
+
+        # Registrar en colección de historial central si aplica
+        HistorialService.registrar({
+            "usuario_id": data.get("usuario_id", "sistema"),
+            "entidad_id": empresa_id,
+            "tipo": "empresa",
+            "cambio": "Empresa creada",
+            "fecha": hoy
+        })
 
         return data
+
 
     @staticmethod
     def listar():

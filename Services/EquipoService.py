@@ -3,6 +3,8 @@ from Services.HistorialService import HistorialService
 from Services.UsuarioServices import UsuarioService
 from bson import ObjectId, errors
 from datetime import datetime
+db_config = DatabaseConfig()
+neo4j = db_config.get_neo4j_driver()
 
 db = DatabaseConfig().get_mongo_db()
 equipo_collection = db["equipos"]
@@ -25,6 +27,32 @@ class EquipoService:
         result = equipo_collection.insert_one(data)
         equipo_id = str(result.inserted_id)
 
+        # Registrar en Neo4j
+        try:
+            with db_config.get_neo4j_driver().session() as session:
+                # Crear nodo Equipo
+                session.run(
+                    """
+                    CREATE (e:Equipo {id: $id, nombre: $nombre})
+                    """,
+                    id=equipo_id,
+                    nombre=data.get("nombre", "")
+                )
+
+                # Crear relaciones con integrantes
+                for uid in data.get("integrantes", []):
+                    session.run(
+                        """
+                        MATCH (u:Usuario {id: $usuario_id}), (e:Equipo {id: $equipo_id})
+                        MERGE (u)-[:PERTENECE_A]->(e)
+                        """,
+                        usuario_id=uid,
+                        equipo_id=equipo_id
+                    )
+        except Exception as e:
+            print(f"⚠️ Error registrando en Neo4j: {e}")
+
+        # Registrar historial
         HistorialService.registrar({
             "usuario_id": data.get("usuario_id", "sistema"),
             "entidad_id": equipo_id,
@@ -56,6 +84,20 @@ class EquipoService:
                 "ex_integrantes": exs
             }}
         )
+
+        # Neo4j: Eliminar relación
+        try:
+            with neo4j.session() as session:
+                session.run(
+                    """
+                    MATCH (u:Usuario {id: $usuario_id})-[r:PERTENECE_A]->(e:Equipo {id: $equipo_id})
+                    DELETE r
+                    """,
+                    usuario_id=usuario_id,
+                    equipo_id=equipo_id
+                )
+        except Exception as e:
+            print(f"⚠️ Error en Neo4j al eliminar integrante: {e}")
 
         HistorialService.registrar({
             "usuario_id": usuario_id,
@@ -128,6 +170,20 @@ class EquipoService:
             "ex_integrantes": equipo["ex_integrantes"]
         }})
 
+        # Neo4j: Crear relación
+        try:
+            with neo4j.session() as session:
+                session.run(
+                    """
+                    MATCH (u:Usuario {id: $usuario_id}), (e:Equipo {id: $equipo_id})
+                    MERGE (u)-[:PERTENECE_A]->(e)
+                    """,
+                    usuario_id=usuario_id,
+                    equipo_id=equipo_id
+                )
+        except Exception as e:
+            print(f"⚠️ Error en Neo4j al agregar integrante: {e}")
+
         HistorialService.registrar({
             "usuario_id": usuario_id,
             "entidad_id": equipo_id,
@@ -137,6 +193,7 @@ class EquipoService:
         })
 
         return EquipoService.obtener_por_id(equipo_id)
+
 
     @staticmethod
     def actualizar(equipo_id: str, update_data: dict):
