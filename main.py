@@ -9,6 +9,7 @@ from Controllers.EmpresaController import empresa_router
 from Controllers.HistorialController import historial_router
 from Controllers.OfertaController import oferta_router
 from Controllers.CursoController import curso_router
+from Controllers.CertificacionController import certificacion_router
 
 
 app = FastAPI()
@@ -291,6 +292,7 @@ app.include_router(usuarios_router)
 app.include_router(skills_router)
 app.include_router(empresa_router)
 app.include_router(curso_router)
+app.include_router(certificacion_router)
 
 
 """
