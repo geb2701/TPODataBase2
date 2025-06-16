@@ -10,7 +10,7 @@ mongo_db = db_config.get_mongo_db()
 neo4j = db_config.get_neo4j_driver()
 certificaciones_collection = mongo_db["certificaciones"]
 
-def certificacion_mongo_to_dto(cert):
+def mongo_to_model(cert):
     cert["id"] = str(cert["_id"])
     cert.pop("_id", None)
     return cert
@@ -44,6 +44,6 @@ def crear(cert_dict):
 def listar():
     try:
         certificaciones = list(certificaciones_collection.find())
-        return [certificacion_mongo_to_dto(c) for c in certificaciones]
+        return [mongo_to_model(c) for c in certificaciones]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

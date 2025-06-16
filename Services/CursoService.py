@@ -9,7 +9,7 @@ neo4j = db_config.get_neo4j_driver()
 cursos_collection = mongo_db["cursos"]
 skills_collection = mongo_db["skills"]
 
-def curso_mongo_to_dto(curso):
+def mongo_to_model(curso):
     curso["id"] = str(curso["_id"])
     curso.pop("_id", None)
     return curso
@@ -19,7 +19,7 @@ def validar_skills_existen(skills_ids):
         return
     existentes = list(skills_collection.find({"_id": {"$in": [ObjectId(s) for s in skills_ids]}}))
     if len(existentes) != len(skills_ids):
-        raise HTTPException(status_code=400, detail="Uno o más IDs de skills no existen.")
+        raise HTTPException(status_code=500, detail="Uno o más IDs de skills no existen.")
 
 def crear(curso_dict):
     try:
@@ -42,7 +42,7 @@ def crear(curso_dict):
             for skill_id in curso_dict.get("skills", []):
                 session.run("""
                     MATCH (c:Curso {id: $curso_id}), (s:Skill {id: $skill_id})
-                    MERGE (c)-[:REQUIERE]->(s)
+                    MERGE (c)-[:PROPORCIONA]->(s)
                 """, curso_id=curso_dict["id"], skill_id=skill_id)
 
         return curso_dict
@@ -60,7 +60,7 @@ def listar():
                     skill["id"] = str(skill["_id"])
                     skill.pop("_id", None)
                     curso["skills_detalle"].append(skill)
-        return [curso_mongo_to_dto(c) for c in cursos]
+        return [mongo_to_model(c) for c in cursos]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -75,7 +75,7 @@ def obtener_por_id(curso_id):
                     skill["id"] = str(skill["_id"])
                     skill.pop("_id", None)
                     curso["skills_detalle"].append(skill)
-            return curso_mongo_to_dto(curso)
+            return mongo_to_model(curso)
         return None
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -101,17 +101,17 @@ def actualizar(curso_id, update_data):
 
             if "skills" in update_data:
                 session.run("""
-                    MATCH (c:Curso {id: $curso_id})-[r:REQUIERE]->()
+                    MATCH (c:Curso {id: $curso_id})-[r:PROPORCIONA]->()
                     DELETE r
                 """, curso_id=curso_id)
 
                 for skill_id in update_data["skills"]:
                     session.run("""
                         MATCH (c:Curso {id: $curso_id}), (s:Skill {id: $skill_id})
-                        MERGE (c)-[:REQUIERE]->(s)
+                        MERGE (c)-[:PROPORCIONA]->(s)
                     """, curso_id=curso_id, skill_id=skill_id)
 
-        return curso_mongo_to_dto(curso)
+        return mongo_to_model(curso)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

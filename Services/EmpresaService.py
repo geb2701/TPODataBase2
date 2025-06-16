@@ -1,6 +1,5 @@
 from Dtos import Historial
 from Services.DatabaseConfig import DatabaseConfig
-from Services.HistorialService import HistorialService
 from bson import ObjectId
 from datetime import datetime
 
@@ -39,15 +38,6 @@ class EmpresaService:
                 )
         except Exception as e:
             print(f"⚠️ Error registrando empresa en Neo4j: {e}")
-
-        # Registrar en colección de historial central si aplica
-        HistorialService.registrar({
-            "usuario_id": data.get("usuario_id", "sistema"),
-            "entidad_id": empresa_id,
-            "tipo": "empresa",
-            "cambio": "Empresa creada",
-            "fecha": hoy
-        })
 
         return data
 

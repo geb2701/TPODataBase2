@@ -23,7 +23,7 @@ def obtener_equipo(equipo_id: str):
             raise HTTPException(status_code=404, detail="Equipo no encontrado")
         return equipo
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -48,7 +48,7 @@ def remover_integrante(equipo_id: str, usuario_id: str):
         EquipoService.eliminar_integrante(equipo_id, usuario_id)
         return {"message": "Integrante removido correctamente"}
     except ValueError as e:
-        raise HTTPException(400, detail=str(e))
+        raise HTTPException(500, detail=str(e))
     except Exception as e:
         raise HTTPException(500, detail="Error interno")
 
@@ -58,6 +58,6 @@ def agregar_integrante(equipo_id: str, usuario_id: str):
         equipo = EquipoService.agregar_integrante(equipo_id, usuario_id)
         return {"message": "Integrante agregado correctamente", "equipo": equipo}
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

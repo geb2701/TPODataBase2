@@ -42,7 +42,7 @@ def actualizar_curso(curso_id: str, data: CursoUpdateDto):
         raise HTTPException(status_code=500, detail=str(e))
 
 @curso_router.delete("/")
-def eliminar_curso_por_body(data: CursoDeleteDto):
+def eliminar_curso(data: CursoDeleteDto):
     try:
         curso = CursoService.obtener_por_id(data.id)
         if not curso:
