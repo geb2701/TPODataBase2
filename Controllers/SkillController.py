@@ -38,7 +38,12 @@ def listar_skills_endpoint(
 
 @skills_router.get("/{skill_id}", response_model=Skill)
 def obtener_skill_endpoint(skill_id: str):
-    skill = obtener_skill(skill_id)
-    if not skill:
-        raise HTTPException(404, "Skill no encontrada")
-    return skill
+    try:
+        skill = obtener_skill(skill_id)
+        if not skill:
+            raise HTTPException(404, "Skill no encontrada")
+        return skill
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

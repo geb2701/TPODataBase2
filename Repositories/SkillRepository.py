@@ -44,3 +44,9 @@ def crear_skill(skill_dict):
 def listar_skills():
     skills = list(skills_collection.find())
     return [skill_mongo_to_model(s) for s in skills]
+
+def obtener_skill(skill_id):
+    skill = skills_collection.find_one({"_id": ObjectId(skill_id)})
+    if skill:
+        return skill_mongo_to_model(skill)
+    return None
