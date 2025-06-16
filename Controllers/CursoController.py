@@ -12,6 +12,8 @@ curso_router = APIRouter(prefix="/cursos", tags=["Cursos"])
 def crear_curso(data: CursoCreateDto):
     try:
         return CursoService.crear(data.dict())
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -19,6 +21,8 @@ def crear_curso(data: CursoCreateDto):
 def listar_cursos():
     try:
         return CursoService.listar()
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -51,5 +55,7 @@ def eliminar_curso(data: CursoDeleteDto):
             raise HTTPException(status_code=404, detail="Curso no encontrado")
         CursoService.eliminar(data.id)
         return {"mensaje": "Curso eliminado"}
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

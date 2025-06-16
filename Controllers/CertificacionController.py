@@ -6,9 +6,9 @@ from Dtos.Certificacion.CertificacionCreateDto import CertificacionCreateDto
 from Services.CertificacionService import CertificacionService
 
 
-curso_router = APIRouter(prefix="/certificados", tags=["certificados"])
+certificacion_router = APIRouter(prefix="/certificados", tags=["certificados"])
 
-@curso_router.post("/", response_model=Certificacion)
+@certificacion_router.post("/", response_model=Certificacion)
 def crear_curso(data: CertificacionCreateDto):
     try:
         return CertificacionService.crear(data.model_dump())
@@ -17,7 +17,7 @@ def crear_curso(data: CertificacionCreateDto):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@curso_router.get("/", response_model=List[Certificacion])
+@certificacion_router.get("/", response_model=List[Certificacion])
 def listar_cursos():
     try:
         return CertificacionService.listar()
@@ -26,7 +26,7 @@ def listar_cursos():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@curso_router.get("/{curso_id}", response_model=Certificacion)
+@certificacion_router.get("/{curso_id}", response_model=Certificacion)
 def obtener_curso(curso_id: str):
     try:
         curso = CertificacionService.obtener_por_id(curso_id)
