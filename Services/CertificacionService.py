@@ -5,8 +5,6 @@ from fastapi import HTTPException
 from datetime import date
 
 # Configuración de base de datos
-
-
 db_config = DatabaseConfig.DatabaseConfig()
 mongo_db = db_config.get_mongo_db()
 neo4j = db_config.get_neo4j_driver()
@@ -14,23 +12,27 @@ certificaciones_collection = mongo_db["certificaciones"]
 cursos_collection = mongo_db["cursos"]
 usuarios_collection = mongo_db["usuarios"]
 
-
 def mongo_to_model(cert):
     cert["id"] = str(cert["_id"])
     cert.pop("_id", None)
     return cert
 
+class CertificacionService:
+    @staticmethod
+    def crear(cert_dto):
+        # Convertir CertificacionCreateDto a dict
+        cert_dict = cert_dto.dict()
+        # Convertir ids a ObjectId para MongoDB
+        cert_dict["curso"] = ObjectId(cert_dict["curso"])
+        cert_dict["participante"] = ObjectId(cert_dict["participante"])
 
-def crear_certificacion_y_asignar_skills(cert_dict):
-    try:
-        # Insertar certificación en MongoDB
         result = certificaciones_collection.insert_one(cert_dict)
         cert_dict["id"] = str(result.inserted_id)
 
-        # Crear relación en Neo4j
+        # Crear relación en Neo4j (usar string para id)
         with neo4j.session() as session:
             session.run("""
-                MATCH (u:Usuario {id: $usuario_id})
+                MATCH (u:Usuario {id: $participante})
                 MATCH (c:Curso {id: $curso_id})
                 CREATE (u)-[:TIENE_CERTIFICACION {
                     puntaje: $puntaje,
@@ -38,8 +40,8 @@ def crear_certificacion_y_asignar_skills(cert_dict):
                     fecha_emision: $fecha_emision
                 }]->(c)
             """,
-            usuario_id=cert_dict["participante"],
-            curso_id=cert_dict["curso"],
+            participante=str(cert_dict["participante"]),
+            curso_id=str(cert_dict["curso"]),
             puntaje=cert_dict["puntaje"],
             aprobada=cert_dict["aprobada"],
             fecha_emision=str(cert_dict["fecha_emision"])
@@ -47,8 +49,8 @@ def crear_certificacion_y_asignar_skills(cert_dict):
 
         # Si está aprobada, asignar skills del curso al usuario
         if cert_dict.get("aprobada"):
-            curso = cursos_collection.find_one({"_id": ObjectId(cert_dict["curso"])})
-            usuario = usuarios_collection.find_one({"_id": ObjectId(cert_dict["participante"])})
+            curso = cursos_collection.find_one({"_id": cert_dict["curso"]})
+            usuario = usuarios_collection.find_one({"_id": cert_dict["participante"]})
 
             if curso and usuario:
                 skills_curso = curso.get("skills", [])
@@ -58,7 +60,7 @@ def crear_certificacion_y_asignar_skills(cert_dict):
 
                 if nuevas_skills:
                     usuarios_collection.update_one(
-                        {"_id": ObjectId(cert_dict["participante"])},
+                        {"_id": cert_dict["participante"]},
                         {"$push": {"skills": {"$each": nuevas_skills}}}
                     )
 
@@ -69,18 +71,28 @@ def crear_certificacion_y_asignar_skills(cert_dict):
                                 MATCH (s:Skill {id: $skill_id})
                                 MERGE (u)-[:DOMINA]->(s)
                             """,
-                            usuario_id=cert_dict["participante"],
+                            usuario_id=str(cert_dict["participante"]),
                             skill_id=skill_id)
 
+        cert_dict["curso"] = str(cert_dict["curso"])
+        cert_dict["participante"] = str(cert_dict["participante"])
         return cert_dict
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
-
-def listar():
-    try:
-        certificaciones = list(certificaciones_collection.find())
-        return [mongo_to_model(c) for c in certificaciones]
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    @staticmethod
+    def listar():
+        try:
+            certificaciones = list(certificaciones_collection.find())
+            return [mongo_to_model(c) for c in certificaciones]
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+        
+    @staticmethod
+    def obtener_por_id(cert_id: str):
+        try:
+            cert = certificaciones_collection.find_one({"_id": ObjectId(cert_id)})
+            if not cert:
+                raise HTTPException(status_code=404, detail="Certificación no encontrada")
+            return mongo_to_model(cert)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"ID inválido o error: {str(e)}")
