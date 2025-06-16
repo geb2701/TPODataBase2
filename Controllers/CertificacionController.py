@@ -9,7 +9,7 @@ certificacion_router = APIRouter(prefix="/certificaciones", tags=["Certificacion
 @certificacion_router.post("/", response_model=CertificacionDto)
 def crear_certificacion(data: CertificacionCreateDto):
     try:
-        return CertificacionService.crear_certificacion_y_asignar_skills(data.dict())
+        return CertificacionService.crear(data.dict())
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
