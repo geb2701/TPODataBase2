@@ -1,0 +1,13 @@
+from pydantic import BaseModel
+from typing import List, Optional
+
+class CursoUpdateDto(BaseModel):
+    titulo: Optional[str]
+    descripcion: Optional[str]
+    categoria: Optional[str]
+    nivel: Optional[str]
+    modalidad: Optional[str]
+    duracion_horas: Optional[int]
+    fecha_publicacion: Optional[str]
+    activo: Optional[bool]
+    skills: Optional[List[str]]

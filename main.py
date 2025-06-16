@@ -8,6 +8,8 @@ from Controllers.ProcesoSeleccionController import procesos_router
 from Controllers.EmpresaController import empresa_router
 from Controllers.HistorialController import historial_router
 from Controllers.OfertaController import oferta_router
+from Controllers.CursoController import curso_router
+
 
 app = FastAPI()
 """
@@ -288,6 +290,8 @@ def eliminar_recomendacion(rec_id: str):
 app.include_router(usuarios_router)
 app.include_router(skills_router)
 app.include_router(empresa_router)
+app.include_router(curso_router)
+
 
 """
 app.include_router(entrevistas_router)
