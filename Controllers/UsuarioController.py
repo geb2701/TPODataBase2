@@ -49,55 +49,6 @@ def obtener_usuario_endpoint(usuario_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@usuarios_router.patch("/referir", response_model=str)
-def referir_usuario_endpoint(data: ReferirDto):
-    try:
-        recomendador = obtener_usuario(data.recomendadorId)
-        referido = obtener_usuario(data.referidoId)
-
-        if not recomendador or not referido:
-            raise HTTPException(404, "Uno o ambos usuarios no existen")
-
-        # Inicializar listas si no existen
-        recomendador.setdefault("recomendado", [])
-        referido.setdefault("referido", [])
-
-        # Validar si ya existe la relación
-        if data.referidoId in recomendador["recomendado"]:
-            raise HTTPException(status_code=500, detail=str(e))
-
-        # Añadir la relación
-        recomendador["recomendado"].append(data.referidoId)
-        referido["referido"].append(data.recomendadorId)
-
-        actualizar_usuario(data.recomendadorId, {"recomendado": recomendador["recomendado"]})
-        actualizar_usuario(data.referidoId, {"referido": referido["referido"]})
-
-        return {"message": "Usuario referido correctamente"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@usuarios_router.patch("/añadir_skill")
-def añadir_skill_endpoint(data: AgregarSkillDto):
-    try:
-        usuario = obtener_usuario(data.usuarioId)
-
-        if not usuario:
-            raise HTTPException(404, "Usuario no encontrado")
-
-        usuario.setdefault("skills", [])
-
-        if data.skillId in usuario["skills"]:
-            raise HTTPException(status_code=500, detail=str(e))
-
-        usuario["skills"].append(data.skillId)
-
-        actualizar_usuario(data.usuarioId, {"skills": usuario["skills"]})
-
-        return {"message": "Skill añadida correctamente"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    
 
 @usuarios_router.patch("/{usuario_id:uuid}", response_model=Usuario)
 def actualizar_usuario_endpoint(usuario_id: str, usuario_update: UsuarioUpdateDto):

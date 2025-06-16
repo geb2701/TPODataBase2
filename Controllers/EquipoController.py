@@ -1,46 +1,36 @@
 from fastapi import APIRouter, HTTPException
 from typing import List
-from Dtos.Equipo.EquipoCreateDto import EquipoCreateDto
+from Services.EquipoService import EquipoService
 from Dtos.Equipo.EquipoDto import EquipoDto
+from Dtos.Equipo.EquipoCreateDto import EquipoCreateDto
 from Dtos.Equipo.EquipoUpdateDto import EquipoUpdateDto
 
-equipos_router = APIRouter(prefix="/equipos", tags=["Equipos"])
+equipo_router = APIRouter(prefix="/equipos", tags=["Equipos"])
 
-# simulador de base de datos temporal
-db_equipos = {}
+@equipo_router.post("/", response_model=EquipoDto)
+def crear_equipo(data: EquipoCreateDto):
+    return EquipoService.crear(data.dict())
 
-@equipos_router.post("/", response_model=EquipoDto)
-def crear_equipo(equipo: EquipoCreateDto):
-    equipo_id = str(len(db_equipos) + 1)
-    equipo_data = equipo.dict()
-    equipo_data["id"] = equipo_id
-    db_equipos[equipo_id] = equipo_data
-    return equipo_data
-
-@equipos_router.get("/", response_model=List[EquipoDto])
+@equipo_router.get("/", response_model=List[EquipoDto])
 def listar_equipos():
-    return list(db_equipos.values())
+    return EquipoService.listar()
 
-@equipos_router.get("/{equipo_id}", response_model=EquipoDto)
+@equipo_router.get("/{equipo_id}", response_model=EquipoDto)
 def obtener_equipo(equipo_id: str):
-    equipo = db_equipos.get(equipo_id)
+    equipo = EquipoService.obtener_por_id(equipo_id)
     if not equipo:
         raise HTTPException(404, "Equipo no encontrado")
     return equipo
 
-@equipos_router.patch("/{equipo_id}", response_model=EquipoDto)
-def actualizar_equipo(equipo_id: str, datos: EquipoUpdateDto):
-    equipo = db_equipos.get(equipo_id)
-    if not equipo:
+@equipo_router.patch("/{equipo_id}", response_model=EquipoDto)
+def actualizar_equipo(equipo_id: str, data: EquipoUpdateDto):
+    if not EquipoService.obtener_por_id(equipo_id):
         raise HTTPException(404, "Equipo no encontrado")
-    update_data = datos.dict(exclude_unset=True)
-    equipo.update(update_data)
-    db_equipos[equipo_id] = equipo
-    return equipo
+    return EquipoService.actualizar(equipo_id, data.dict(exclude_unset=True))
 
-@equipos_router.delete("/{equipo_id}")
+@equipo_router.delete("/{equipo_id}")
 def eliminar_equipo(equipo_id: str):
-    if equipo_id not in db_equipos:
+    if not EquipoService.obtener_por_id(equipo_id):
         raise HTTPException(404, "Equipo no encontrado")
-    del db_equipos[equipo_id]
+    EquipoService.eliminar(equipo_id)
     return {"mensaje": "Equipo eliminado"}
