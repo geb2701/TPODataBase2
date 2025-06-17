@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List
 
+from Dtos.Certificacion.CertificacionFilterDto import CertificacionFilterDto
 from Dtos.Certificacion.Certificacion import Certificacion
 from Dtos.Certificacion.CertificacionCreateDto import CertificacionCreateDto
 from Services.CertificacionService import CertificacionService
@@ -18,9 +19,16 @@ def crear_curso(data: CertificacionCreateDto):
         raise HTTPException(status_code=500, detail=str(e))
 
 @certificacion_router.get("/", response_model=List[Certificacion])
-def listar_cursos():
+def listar_cursos(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(10, ge=1, le=100),
+    filtros: CertificacionFilterDto = Depends()
+):
     try:
-        return CertificacionService.listar()
+        certificaciones = CertificacionService.listar()
+        for field, value in filtros.model_dump(exclude_none=True).items():
+            certificaciones = [c for c in certificaciones if c.get(field) == value]
+        return certificaciones[skip:skip + limit]
     except HTTPException as e:
         raise e
     except Exception as e:

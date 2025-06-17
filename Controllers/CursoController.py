@@ -44,6 +44,8 @@ def actualizar_curso(curso_id: str, data: CursoUpdateDto):
         if not CursoService.obtener_por_id(curso_id):
             raise HTTPException(status_code=404, detail="Curso no encontrado")
         return CursoService.actualizar(curso_id, data.dict(exclude_unset=True))
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

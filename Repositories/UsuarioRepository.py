@@ -97,7 +97,7 @@ def actualizar_usuario(usuario_id, update_data):
                     MERGE (s:Skill {id: $skill_id})
                     WITH s
                     MATCH (u:Usuario {id: $usuario_id})
-                    MERGE (u)-[:POSEE]->(s)
+                    MERGE (u)-[:DOMINA]->(s)
                     """,
                     usuario_id=usuario_id,
                     skill_id=skill_id
