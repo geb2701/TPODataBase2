@@ -34,7 +34,6 @@ def listar_usuarios_endpoint(
 ):
     try:
         usuarios = listar_usuarios()
-        # Filtrado automático usando los campos no nulos del DTO
         for field, value in filtros.model_dump(exclude_none=True).items():
             usuarios = [u for u in usuarios if u.get(field) == value]
         return usuarios[skip:skip + limit]

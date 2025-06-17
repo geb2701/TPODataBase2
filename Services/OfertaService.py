@@ -1,7 +1,5 @@
 from Services.DatabaseConfig import DatabaseConfig
-from Services.HistorialService import HistorialService
 from bson import ObjectId
-from datetime import datetime
 
 db = DatabaseConfig().get_mongo_db()
 oferta_collection = db["ofertas"]
@@ -12,15 +10,6 @@ class OfertaService:
     def crear(data):
         result = oferta_collection.insert_one(data)
         oferta_id = str(result.inserted_id)
-
-        HistorialService.registrar({
-            "usuario_id": data.get("usuario_id", "sistema"),
-            "entidad_id": oferta_id,
-            "tipo": "oferta",
-            "cambio": "Oferta creada",
-            "fecha": datetime.now()
-        })
-
         return {**data, "id": oferta_id}
 
     @staticmethod
@@ -38,13 +27,6 @@ class OfertaService:
     def actualizar(oferta_id: str, data):
         oferta_collection.update_one({"_id": ObjectId(oferta_id)}, {"$set": data})
 
-        HistorialService.registrar({
-            "usuario_id": data.get("usuario_id", "sistema"),
-            "entidad_id": oferta_id,
-            "tipo": "oferta",
-            "cambio": "Oferta actualizada",
-            "fecha": datetime.now()
-        })
 
         return OfertaService.obtener_por_id(oferta_id)
 
@@ -52,14 +34,6 @@ class OfertaService:
     def eliminar(oferta_id: str):
         oferta_collection.delete_one({"_id": ObjectId(oferta_id)})
 
-        HistorialService.registrar({
-            "usuario_id": "sistema",
-            "entidad_id": oferta_id,
-            "tipo": "oferta",
-            "cambio": "Oferta eliminada",
-            "fecha": datetime.now()
-        })
-    
     @staticmethod
     def buscar_por_empresa(empresa_id: str):
         return [

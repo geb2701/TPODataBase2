@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 from datetime import date
 
-class CursoDto(BaseModel):
+class Curso(BaseModel):
     id: Optional[str]
     titulo: str
     descripcion: str

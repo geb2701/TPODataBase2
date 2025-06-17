@@ -1,8 +1,8 @@
 from Dtos import Historial
 from Services.DatabaseConfig import DatabaseConfig
-from Services.HistorialService import HistorialService
-from bson import ObjectId
+from bson import ObjectId, errors
 from datetime import datetime
+from fastapi import HTTPException
 
 db_config = DatabaseConfig()
 empresa_collection = db_config.get_mongo_db()["empresas"]
@@ -14,60 +14,99 @@ def mongo_to_model(item):
     return item
 
 class EmpresaService:
+
     @staticmethod
     def crear(data):
-        # Registrar historial en Mongo
-        historial = data.get("historial", [])
-        hoy = datetime.today()
-        historial.append(Historial(fecha=hoy, mensage="Empresa creada").model_dump())
-        data["historial"] = historial
-
-        # Insertar en MongoDB
-        result = empresa_collection.insert_one(data)
-        empresa_id = str(result.inserted_id)
-        data["id"] = empresa_id
-
-        # Registrar en Neo4j
         try:
-            with neo4j.session() as session:
-                session.run(
-                    """
-                    CREATE (e:Empresa {id: $id, nombre: $nombre})
-                    """,
-                    id=empresa_id,
-                    nombre=data.get("nombre", "")
-                )
+            historial = data.get("historial", [])
+            hoy = datetime.today()
+            historial.append(Historial(fecha=hoy, mensage="Empresa creada").model_dump())
+            data["historial"] = historial
+
+            result = empresa_collection.insert_one(data)
+            empresa_id = str(result.inserted_id)
+            data["id"] = empresa_id
+
+            # Neo4j
+            try:
+                with neo4j.session() as session:
+                    session.run(
+                        "CREATE (e:Empresa {id: $id, nombre: $nombre})",
+                        id=empresa_id,
+                        nombre=data.get("nombre", "")
+                    )
+            except Exception as e:
+                print(f"⚠️ Error registrando empresa en Neo4j: {e}")
+
+            return data
         except Exception as e:
-            print(f"⚠️ Error registrando empresa en Neo4j: {e}")
-
-        # Registrar en colección de historial central si aplica
-        HistorialService.registrar({
-            "usuario_id": data.get("usuario_id", "sistema"),
-            "entidad_id": empresa_id,
-            "tipo": "empresa",
-            "cambio": "Empresa creada",
-            "fecha": hoy
-        })
-
-        return data
-
+            raise ValueError(f"Error al crear empresa: {e}")
 
     @staticmethod
     def listar():
-        return [mongo_to_model(e) for e in empresa_collection.find()]
+        try:
+            return [mongo_to_model(e) for e in empresa_collection.find()]
+        except Exception as e:
+            raise ValueError(f"Error al listar empresas: {e}")
 
     @staticmethod
     def obtener_por_id(empresa_id: str):
-        empresa = empresa_collection.find_one({"_id": ObjectId(empresa_id)})
-        if not empresa:
-            return None
-        return {**empresa, "id": str(empresa["_id"])}
+        try:
+            obj_id = ObjectId(empresa_id)
+            empresa = empresa_collection.find_one({"_id": obj_id})
+            if not empresa:
+                return None
+            return mongo_to_model(empresa)
+        except errors.InvalidId:
+            raise ValueError("ID de empresa inválido")
+        except Exception as e:
+            raise ValueError(f"Error al obtener empresa: {e}")
 
     @staticmethod
     def actualizar(empresa_id: str, data):
-        empresa_collection.update_one({"_id": ObjectId(empresa_id)}, {"$set": data})
-        return EmpresaService.obtener_por_id(empresa_id)
+        try:
+            obj_id = ObjectId(empresa_id)
+            empresa_collection.update_one({"_id": obj_id}, {"$set": data})
+
+            # Neo4j - actualizar nombre si está en el update
+            if "nombre" in data:
+                try:
+                    with neo4j.session() as session:
+                        session.run(
+                            """
+                            MATCH (e:Empresa {id: $empresa_id})
+                            SET e.nombre = $nuevo_nombre
+                            """,
+                            empresa_id=empresa_id,
+                            nuevo_nombre=data["nombre"]
+                        )
+                except Exception as e:
+                    print(f"⚠️ Error actualizando empresa en Neo4j: {e}")
+
+            return EmpresaService.obtener_por_id(empresa_id)
+        except errors.InvalidId:
+            raise ValueError("ID de empresa inválido")
+        except Exception as e:
+            raise ValueError(f"Error al actualizar empresa: {e}")
 
     @staticmethod
     def eliminar(empresa_id: str):
-        empresa_collection.delete_one({"_id": ObjectId(empresa_id)})
+        try:
+            obj_id = ObjectId(empresa_id)
+            result = empresa_collection.delete_one({"_id": obj_id})
+            if result.deleted_count == 0:
+                raise ValueError("Empresa no encontrada o ya eliminada")
+
+            # Neo4j
+            try:
+                with neo4j.session() as session:
+                    session.run(
+                        "MATCH (e:Empresa {id: $id}) DETACH DELETE e",
+                        id=empresa_id
+                    )
+            except Exception as e:
+                print(f"⚠️ Error al eliminar empresa en Neo4j: {e}")
+        except errors.InvalidId:
+            raise ValueError("ID de empresa inválido")
+        except Exception as e:
+            raise ValueError(f"Error al eliminar empresa: {e}")
