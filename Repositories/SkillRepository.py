@@ -2,7 +2,7 @@ from datetime import datetime
 from pymongo import MongoClient
 from bson import ObjectId
 
-from Dtos import Historial
+from Dtos.Historial import Historial
 from Services import DatabaseConfig
 
 db_config = DatabaseConfig.DatabaseConfig()
