@@ -10,6 +10,5 @@ class CursoCreateDto(BaseModel):
     nivel: str
     modalidad: str
     duracion_horas: int
-    fecha_publicacion: date  # formato ISO
     activo: bool
     skills: List[str]

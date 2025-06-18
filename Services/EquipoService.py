@@ -11,6 +11,7 @@ neo4j = db_config.get_neo4j_driver()
 db = db_config.get_mongo_db()
 equipo_collection = db["equipos"]
 usuario_collection = db["usuarios"]
+empresa_collection = db["empresas"]
 
 class EquipoService:
     @staticmethod
@@ -46,12 +47,28 @@ class EquipoService:
 
         empresa_id = data.get("empresa_id")
         if empresa_id:
-            EmpresaService.actualizar(empresa_id, {"equipos": data["id"]})
+            empresa = empresa_collection.find_one({"_id": ObjectId(empresa_id)})
+            if "equipos" not in empresa or not isinstance(empresa["equipos"], list):
+                empresa_collection.update_one(
+                    {"_id": ObjectId(empresa_id)},
+                    {"$set": {"equipos": []}}
+                )
+            historial_emp = empresa.get("historial", [])
+            hoy = datetime.today()
+            mensaje = f"El equipo '{empresa_id}' fue agregado a la empresa."
+            historial_emp.append(Historial(fecha=hoy, mensage=mensaje).model_dump())
+            empresa_collection.update_one(
+                {"_id": ObjectId(empresa_id)},
+                {
+                    "$addToSet": {"equipos": data["id"]},
+                    "$set": {"historial": historial_emp}
+                }
+            )
 
         with neo4j.session() as session:
             session.run(
                 "CREATE (e:Equipo {id: $id, nombre: $nombre})",
-                id=equipo_id,
+                id=data["id"],
                 nombre=data.get("nombre", "")
             )
 
@@ -63,7 +80,7 @@ class EquipoService:
                     MERGE (u)-[:PERTENECE_A]->(e)
                     """,
                     usuario_id=uid,
-                    equipo_id=equipo_id
+                    equipo_id=data["id"]
                 )
 
             # Relación con empresa
@@ -74,7 +91,7 @@ class EquipoService:
                     MERGE (emp)-[:TIENE_EQUIPO]->(e)
                     """,
                     empresa_id=empresa_id,
-                    equipo_id=equipo_id
+                    equipo_id=data["id"]
                 )
 
         return data
@@ -182,12 +199,15 @@ class EquipoService:
         equipo_collection.update_one({"_id": equipo_id}, {"$set": update_data})
 
         if nueva_empresa_id and nueva_empresa_id != empresa_anterior_id:
-            empresa_collection = db["empresas"]
-
             empresa_anterior = empresa_collection.find_one({"_id": ObjectId(empresa_anterior_id)}) if empresa_anterior_id else None
             empresa_nueva = empresa_collection.find_one({"_id": ObjectId(nueva_empresa_id)})
 
             if empresa_anterior:
+                if "equipos" not in empresa_anterior or not isinstance(empresa_anterior["equipos"], list):
+                    empresa_collection.update_one(
+                        {"_id": ObjectId(nueva_empresa_id)},
+                        {"$set": {"equipos": []}}
+                    )
                 historial_emp = empresa_anterior.get("historial", [])
                 hoy = datetime.today()
                 mensaje = f"El equipo '{equipo_id}' fue removido de la empresa."
@@ -205,6 +225,11 @@ class EquipoService:
                 hoy = datetime.today()
                 mensaje = f"El equipo '{equipo_id}' fue agregado a la empresa."
                 historial_emp.append(Historial(fecha=hoy, mensage=mensaje).model_dump())
+                if "equipos" not in empresa_nueva or not isinstance(empresa_nueva["equipos"], list):
+                    empresa_collection.update_one(
+                        {"_id": ObjectId(nueva_empresa_id)},
+                        {"$set": {"equipos": []}}
+                    )
                 empresa_collection.update_one(
                     {"_id": ObjectId(nueva_empresa_id)},
                     {

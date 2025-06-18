@@ -9,6 +9,5 @@ class CursoUpdateDto(BaseModel):
     nivel: Optional[str]
     modalidad: Optional[str]
     duracion_horas: Optional[int]
-    fecha_publicacion: Optional[date]
     activo: Optional[bool]
     skills: Optional[List[str]]

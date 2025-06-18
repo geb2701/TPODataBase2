@@ -10,6 +10,5 @@ class Curso(BaseModel):
     nivel: str
     modalidad: str
     duracion_horas: int
-    fecha_publicacion: date
     activo: bool
     skills: List[str]
