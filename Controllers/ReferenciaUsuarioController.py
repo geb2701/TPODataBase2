@@ -1,15 +1,15 @@
 from fastapi import APIRouter, HTTPException
 from Dtos.MensajeRespuesta import MensajeRespuesta
 from Dtos.Usuario.ReferirDto import ReferirDto
-from Repositories.UsuarioRepository import obtener_usuario, actualizar_usuario
 
+from Services.UsuarioServices import UsuarioService
 referencia_usuario_router = APIRouter(prefix="/usuarios", tags=["Referencias entre Usuarios"])
 
 @referencia_usuario_router.patch("/referir", response_model=MensajeRespuesta)
 def referir_usuario_endpoint(data: ReferirDto):
     try:
-        recomendador = obtener_usuario(data.recomendadorId)
-        referido = obtener_usuario(data.referidoId)
+        recomendador = UsuarioService.obtener_por_id(data.recomendadorId)
+        referido = UsuarioService.obtener_por_id(data.referidoId)
 
         if not recomendador or not referido:
             raise HTTPException(404, "Uno o ambos usuarios no existen")
@@ -23,8 +23,8 @@ def referir_usuario_endpoint(data: ReferirDto):
         recomendador["recomendado"].append(data.referidoId)
         referido["referido"].append(data.recomendadorId)
 
-        actualizar_usuario(data.recomendadorId, {"recomendado": recomendador["recomendado"]})
-        actualizar_usuario(data.referidoId, {"referido": referido["referido"]})
+        UsuarioService.actualizar(data.recomendadorId, {"recomendado": recomendador["recomendado"]})
+        UsuarioService.actualizar(data.referidoId, {"referido": referido["referido"]})
 
         return {"message": "Usuario referido correctamente"}
     except HTTPException as e:

@@ -12,7 +12,7 @@ usuarios_collection = mongo_db["usuarios"]
 
 class UsuarioService:
     @staticmethod
-    def mongo_to_dto(usuario):
+    def mongo_to_model(usuario):
         usuario["id"] = str(usuario["_id"])
         usuario.pop("_id", None)
         return usuario
@@ -37,13 +37,13 @@ class UsuarioService:
     @staticmethod
     def listar():
         usuarios = list(usuarios_collection.find())
-        return [UsuarioService.mongo_to_dto(u) for u in usuarios]
+        return [UsuarioService.mongo_to_model(u) for u in usuarios]
 
     @staticmethod
     def obtener_por_id(usuario_id):
         usuario = usuarios_collection.find_one({"_id": ObjectId(usuario_id)})
         if usuario:
-            return UsuarioService.mongo_to_dto(usuario)
+            return UsuarioService.mongo_to_model(usuario)
         return None
 
     @staticmethod
@@ -56,6 +56,8 @@ class UsuarioService:
         hoy = datetime.today()
         for campo, nuevo_valor in update_data.items():
             valor_anterior = usuario.get(campo, None)
+            if valor_anterior == nuevo_valor:
+                continue
             mensaje = f"Se cambió '{campo}' de '{valor_anterior}' a '{nuevo_valor}'"
             historial.append(Historial(fecha=hoy, mensage=mensaje).model_dump())
         update_data["historial"] = historial
@@ -68,7 +70,7 @@ class UsuarioService:
             return None
 
         usuario = usuarios_collection.find_one({"_id": ObjectId(usuario_id)})
-        usuario_dto = usuario_mongo_to_model(usuario)
+        usuario_dto = UsuarioService.mongo_to_model(usuario)
         # Actualizar nodo en Neo4j
         with neo4j.session() as session:
             props = {k: v for k, v in update_data.items() if v is not None and k != "historial"}

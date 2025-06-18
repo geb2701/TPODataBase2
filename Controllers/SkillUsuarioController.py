@@ -1,14 +1,15 @@
 from fastapi import APIRouter, HTTPException
 from Dtos.MensajeRespuesta import MensajeRespuesta
 from Dtos.Usuario.AgregarSkillDto import AgregarSkillDto
-from Repositories.UsuarioRepository import obtener_usuario, actualizar_usuario
+
+from Services.UsuarioServices import UsuarioService
 
 skill_usuario_router = APIRouter(prefix="/usuarios", tags=["Skills de Usuario"])
 
 @skill_usuario_router.patch("/añadir_skill", response_model=MensajeRespuesta)
 def añadir_skill_endpoint(data: AgregarSkillDto):
     try:
-        usuario = obtener_usuario(data.usuarioId)
+        usuario = UsuarioService.obtener_por_id(data.usuarioId)
 
         if not usuario:
             raise HTTPException(404, "Usuario no encontrado")
@@ -20,7 +21,7 @@ def añadir_skill_endpoint(data: AgregarSkillDto):
 
         usuario["skills"].append(data.skillId)
 
-        actualizar_usuario(data.usuarioId, {"skills": usuario["skills"]})
+        UsuarioService.actualizar(data.usuarioId, {"skills": usuario["skills"]})
 
         return {"message": "Skill añadida correctamente"}
     except HTTPException as e:
