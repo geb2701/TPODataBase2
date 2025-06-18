@@ -6,4 +6,3 @@ class CertificacionCreateDto(BaseModel):
     participante: str
     puntaje: float
     aprobada: bool
-    fecha_emision: date = Field(default_factory=date.today)
