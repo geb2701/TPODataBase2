@@ -12,7 +12,7 @@ equipo_router = APIRouter(prefix="/equipos", tags=["Equipos"])
 @equipo_router.post("/", response_model=EquipoDto)
 def crear_equipo(data: EquipoCreateDto):
     try:
-        return EquipoService.crear(data.dict())
+        return EquipoService.crear(data.model_dump())
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
