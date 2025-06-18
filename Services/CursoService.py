@@ -1,5 +1,7 @@
+from datetime import datetime
 from pymongo import MongoClient
 from bson import ObjectId
+from Dtos.Historial import Historial
 from Services import DatabaseConfig
 from fastapi import HTTPException
 
@@ -21,33 +23,41 @@ def validar_skills_existen(skills_ids):
     if len(existentes) != len(skills_ids):
         raise HTTPException(status_code=500, detail="Uno o más IDs de skills no existen.")
 
-def crear(curso_dict):
-    try:
-        validar_skills_existen(curso_dict.get("skills", []))
+def crear(data):
+    historial = data.get("historial", [])
+    hoy = datetime.today()
+    historial.append(Historial(fecha=hoy, mensage="Usuario creado").model_dump())
+    data["historial"] = historial
 
-        result = cursos_collection.insert_one(curso_dict)
-        curso_dict["id"] = str(result.inserted_id)
+    validar_skills_existen(data.get("skills", []))
 
-        with neo4j.session() as session:
+    result = cursos_collection.insert_one(data)
+    data["id"] = str(result.inserted_id)
+
+    with neo4j.session() as session:
+        session.run("""
+            CREATE (c:Curso {
+                id: $id, titulo: $titulo, descripcion: $descripcion, categoria: $categoria,
+                nivel: $nivel, modalidad: $modalidad,
+                duracion_horas: $duracion_horas
+            })
+        """,
+        id=str(data["id"]),
+        titulo=data.get("titulo", ""),
+        descripcion=data.get("descripcion", ""),
+        categoria=data.get("categoria", ""),
+        nivel=data.get("nivel", ""),
+        modalidad=data.get("modalidad", ""),
+        duracion_horas=data.get("duracion_horas", 0)
+        )
+
+        for skill_id in data.get("skills", []):
             session.run("""
-                CREATE (c:Curso {
-                    id: $id, titulo: $titulo, categoria: $categoria,
-                    nivel: $nivel, modalidad: $modalidad,
-                    duracion_horas: $duracion_horas,
-                    fecha_publicacion: $fecha_publicacion,
-                    activo: $activo
-                })
-            """, **curso_dict)
+                MATCH (c:Curso {id: $curso_id}), (s:Skill {id: $skill_id})
+                MERGE (c)-[:CAPACITA]->(s)
+            """, curso_id=data["id"], skill_id=skill_id)
 
-            for skill_id in curso_dict.get("skills", []):
-                session.run("""
-                    MATCH (c:Curso {id: $curso_id}), (s:Skill {id: $skill_id})
-                    MERGE (c)-[:PROPORCIONA]->(s)
-                """, curso_id=curso_dict["id"], skill_id=skill_id)
-
-        return curso_dict
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return data
 
 def listar():
     try:
@@ -79,53 +89,3 @@ def obtener_por_id(curso_id):
         return None
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-def actualizar(curso_id, update_data):
-    try:
-        validar_skills_existen(update_data.get("skills", []))
-
-        result = cursos_collection.update_one(
-            {"_id": ObjectId(curso_id)},
-            {"$set": update_data}
-        )
-        if result.matched_count == 0:
-            return None
-
-        curso = cursos_collection.find_one({"_id": ObjectId(curso_id)})
-
-        with neo4j.session() as session:
-            session.run("""
-                MATCH (c:Curso {id: $id})
-                SET c += $props
-            """, id=curso_id, props=update_data)
-
-            if "skills" in update_data:
-                session.run("""
-                    MATCH (c:Curso {id: $curso_id})-[r:PROPORCIONA]->()
-                    DELETE r
-                """, curso_id=curso_id)
-
-                for skill_id in update_data["skills"]:
-                    session.run("""
-                        MATCH (c:Curso {id: $curso_id}), (s:Skill {id: $skill_id})
-                        MERGE (c)-[:PROPORCIONA]->(s)
-                    """, curso_id=curso_id, skill_id=skill_id)
-
-        return mongo_to_model(curso)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-def eliminar(curso_id):
-    try:
-        result = cursos_collection.delete_one({"_id": ObjectId(curso_id)})
-        eliminado = result.deleted_count > 0
-        if eliminado:
-            with neo4j.session() as session:
-                session.run("""
-                    MATCH (c:Curso {id: $id})
-                    DETACH DELETE c
-                """, id=curso_id)
-        return eliminado
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-

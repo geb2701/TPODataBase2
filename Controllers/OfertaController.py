@@ -5,7 +5,7 @@ from Dtos.Oferta.OfertaDto import OfertaDto
 from Dtos.Oferta.OfertaCreateDto import OfertaCreateDto
 from Dtos.Oferta.OfertaUpdateDto import OfertaUpdateDto
 
-oferta_router = APIRouter(prefix="/ofertas", tags=["Ofertas"])
+oferta_router = APIRouter(prefix="/Ofertas", tags=["Ofertas"])
 
 @oferta_router.post("/", response_model=OfertaDto)
 def crear_oferta(data: OfertaCreateDto):

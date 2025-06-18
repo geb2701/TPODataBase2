@@ -10,5 +10,4 @@ class CursoCreateDto(BaseModel):
     nivel: str
     modalidad: str
     duracion_horas: int
-    activo: bool
     skills: List[str]

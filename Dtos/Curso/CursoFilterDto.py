@@ -1,8 +1,12 @@
-# Dtos/Curso/CursoFilterDto.py
 from pydantic import BaseModel
 from typing import Optional
 
 class CursoFilterDto(BaseModel):
-    nombre: Optional[str] = None
-    empresa_id: Optional[str] = None
-    skill: Optional[str] = None  # Para filtrar por skill dentro del curso
+    id: Optional[str] = None
+    titulo: Optional[str] = None
+    descripcion: Optional[str] = None
+    categoria: Optional[str] = None
+    nivel: Optional[str] = None
+    modalidad: Optional[str] = None
+    duracion_horas: Optional[int] = None
+

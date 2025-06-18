@@ -22,19 +22,8 @@ app.include_router(skill_usuario_router)
 app.include_router(referencia_usuario_router)
 app.include_router(curso_router)
 app.include_router(certificacion_router)
-
-"""
-app.include_router(entrevistas_router)
-app.include_router(empresas_router)
-app.include_router(busquedas_router)
-app.include_router(matches_router)
-app.include_router(inscripciones_router)
-app.include_router(cursos_router)
-app.include_router(recomendaciones_router)
-app.include_router(procesos_router)
-app.include_router(historial_router)
 app.include_router(oferta_router)
-"""
+
 
 app.include_router(certificacion_router)
 

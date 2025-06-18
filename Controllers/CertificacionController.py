@@ -7,7 +7,7 @@ from Dtos.Certificacion.CertificacionCreateDto import CertificacionCreateDto
 from Services.CertificacionService import CertificacionService
 from Dtos.Certificacion.CertificacionFilterDto import CertificacionFilterDto
 
-certificacion_router = APIRouter(prefix="/certificados", tags=["certificados"])
+certificacion_router = APIRouter(prefix="/Certificados", tags=["Certificados"])
 
 @certificacion_router.post("/", response_model=Certificacion)
 def crear_certificacion(data: CertificacionCreateDto):
