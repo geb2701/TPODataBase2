@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel
 
 class OfertaUpdateDto(BaseModel):
@@ -7,4 +7,4 @@ class OfertaUpdateDto(BaseModel):
     categoria: Optional[str]
     modalidad: Optional[str]
     estado: Optional[str]
-    skills: Optional[str]
+    skills: Optional[List[str]]

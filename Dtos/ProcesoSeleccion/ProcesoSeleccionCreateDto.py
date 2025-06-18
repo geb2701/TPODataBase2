@@ -1,5 +1,6 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List
+from datetime import datetime
 
 class ProcesoSeleccionCreateDto(BaseModel):
     empresa_id: str
@@ -7,4 +8,4 @@ class ProcesoSeleccionCreateDto(BaseModel):
     candidato_id: str
     reclutador_id: str
     estado: str
-    historial: List[str] = []
+    historial: List[str] = Field(default_factory=list)

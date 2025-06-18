@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import List
 
 class OfertaCreateDto(BaseModel):
     empresa_id: str
@@ -6,4 +7,4 @@ class OfertaCreateDto(BaseModel):
     categoria: str
     modalidad: str
     estado: str
-    skills: str
+    skills: List[str]

@@ -1,6 +1,5 @@
-from __future__ import annotations
-from typing import List, Optional
 from pydantic import BaseModel
+from typing import List, Optional
 
 class ProcesoSeleccionDto(BaseModel):
     id: Optional[str]
@@ -9,4 +8,4 @@ class ProcesoSeleccionDto(BaseModel):
     candidato_id: str
     reclutador_id: str
     estado: str
-    historial: List[str] = []
+    historial: List[str]
