@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from typing import List
 from Services.EquipoService import EquipoService
-from Dtos.Equipo.EquipoDto import EquipoDto
+from Dtos.Equipo.Equipo import Equipo
 from Dtos.Equipo.EquipoCreateDto import EquipoCreateDto
 from Dtos.Equipo.EquipoUpdateDto import EquipoUpdateDto
 from fastapi import Query, Depends
@@ -9,7 +9,7 @@ from Dtos.Equipo.EquipoFilterDto import EquipoFilterDto
 
 equipo_router = APIRouter(prefix="/equipos", tags=["Equipos"])
 
-@equipo_router.post("/", response_model=EquipoDto)
+@equipo_router.post("/", response_model=Equipo)
 def crear_equipo(data: EquipoCreateDto):
     try:
         return EquipoService.crear(data.model_dump())
@@ -19,7 +19,7 @@ def crear_equipo(data: EquipoCreateDto):
         raise HTTPException(status_code=500, detail="Error al crear equipo")
 
 
-@equipo_router.get("/", response_model=List[EquipoDto])
+@equipo_router.get("/", response_model=List[Equipo])
 def listar_equipos(
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=100),
@@ -34,7 +34,7 @@ def listar_equipos(
         raise HTTPException(status_code=500, detail="Error al listar equipos")
 
 
-@equipo_router.get("/{equipo_id}", response_model=EquipoDto)
+@equipo_router.get("/{equipo_id}", response_model=Equipo)
 def obtener_equipo(equipo_id: str):
     try:
         equipo = EquipoService.obtener_por_id(equipo_id)
@@ -47,7 +47,7 @@ def obtener_equipo(equipo_id: str):
         raise HTTPException(status_code=500, detail="Error al obtener equipo")
 
 
-@equipo_router.patch("/{equipo_id}", response_model=EquipoDto)
+@equipo_router.patch("/{equipo_id}", response_model=Equipo)
 def actualizar_equipo(equipo_id: str, data: EquipoUpdateDto):
     try:
         return EquipoService.actualizar(equipo_id, data.dict(exclude_unset=True))

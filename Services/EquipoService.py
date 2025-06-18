@@ -162,49 +162,58 @@ class EquipoService:
 
     @staticmethod
     def actualizar(equipo_id: str, update_data: dict):
-        equipo = equipo_collection.find_one({"_id": obj_id})
+        equipo = equipo_collection.find_one({"_id": equipo_id})
         if not equipo:
             raise ValueError("Equipo no encontrado")
+        
+        historial = equipo.get("historial", [])
+        hoy = datetime.today()
+        for campo, nuevo_valor in update_data.items():
+            valor_anterior = equipo.get(campo, None)
+            if valor_anterior == nuevo_valor:
+                continue
+            mensaje = f"Se cambió '{campo}' de '{valor_anterior}' a '{nuevo_valor}'"
+            historial.append(Historial(fecha=hoy, mensage=mensaje).model_dump())
+        update_data["historial"] = historial
 
-        campos_permitidos = {"nombre", "empresa_id"}
-        datos_filtrados = {k: v for k, v in update_data.items() if k in campos_permitidos}
-
-        if not datos_filtrados:
-            raise ValueError("No hay campos válidos para actualizar")
-
-        # Detectar si se cambió la empresa
-        nueva_empresa_id = datos_filtrados.get("empresa_id")
+        nueva_empresa_id = update_data.get("empresa_id")
         empresa_anterior_id = equipo.get("empresa_id")
 
-        # Actualización en MongoDB
-        equipo_collection.update_one({"_id": obj_id}, {"$set": datos_filtrados})
-
-        empresa_collection = db["empresas"]
+        equipo_collection.update_one({"_id": equipo_id}, {"$set": update_data})
 
         if nueva_empresa_id and nueva_empresa_id != empresa_anterior_id:
-            # 🔄 Quitar equipo de la empresa anterior
-            if empresa_anterior_id:
-                try:
-                    empresa_collection.update_one(
-                        {"_id": ObjectId(empresa_anterior_id)},
-                        {"$pull": {"equipos": equipo_id}}
-                    )
-                except Exception as e:
-                    print(f"⚠️ Error quitando equipo de empresa anterior: {e}")
+            empresa_collection = db["empresas"]
 
-            # ➕ Agregar equipo a la nueva empresa
-            try:
+            empresa_anterior = empresa_collection.find_one({"_id": ObjectId(empresa_anterior_id)}) if empresa_anterior_id else None
+            empresa_nueva = empresa_collection.find_one({"_id": ObjectId(nueva_empresa_id)})
+
+            if empresa_anterior:
+                historial_emp = empresa_anterior.get("historial", [])
+                hoy = datetime.today()
+                mensaje = f"El equipo '{equipo_id}' fue removido de la empresa."
+                historial_emp.append(Historial(fecha=hoy, mensage=mensaje).model_dump())
+                empresa_collection.update_one(
+                    {"_id": ObjectId(empresa_anterior_id)},
+                    {
+                        "$pull": {"equipos": equipo_id},
+                        "$set": {"historial": historial_emp}
+                    }
+                )
+
+            if empresa_nueva:
+                historial_emp = empresa_nueva.get("historial", [])
+                hoy = datetime.today()
+                mensaje = f"El equipo '{equipo_id}' fue agregado a la empresa."
+                historial_emp.append(Historial(fecha=hoy, mensage=mensaje).model_dump())
                 empresa_collection.update_one(
                     {"_id": ObjectId(nueva_empresa_id)},
-                    {"$addToSet": {"equipos": equipo_id}}
+                    {
+                        "$addToSet": {"equipos": equipo_id},
+                        "$set": {"historial": historial_emp}
+                    }
                 )
-            except Exception as e:
-                print(f"⚠️ Error agregando equipo a empresa nueva: {e}")
 
-        # Neo4j: actualizar relación empresa-equipo
-        try:
             with neo4j.session() as session:
-                # Eliminar relación vieja
                 if empresa_anterior_id and empresa_anterior_id != nueva_empresa_id:
                     session.run(
                         """
@@ -214,7 +223,7 @@ class EquipoService:
                         empresa_id=empresa_anterior_id,
                         equipo_id=equipo_id
                     )
-                # Crear relación nueva
+
                 if nueva_empresa_id and nueva_empresa_id != empresa_anterior_id:
                     session.run(
                         """
@@ -224,8 +233,6 @@ class EquipoService:
                         empresa_id=nueva_empresa_id,
                         equipo_id=equipo_id
                     )
-        except Exception as e:
-            print(f"⚠️ Error en Neo4j al actualizar empresa del equipo: {e}")
 
         return EquipoService.obtener_por_id(equipo_id)
 

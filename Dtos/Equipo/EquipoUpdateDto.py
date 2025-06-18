@@ -4,5 +4,3 @@ from pydantic import BaseModel
 class EquipoUpdateDto(BaseModel):
     nombre: Optional[str]
     empresa_id: Optional[str]
-    integrantes: Optional[List[str]]
-    ex_integrantes: Optional[List[str]]
