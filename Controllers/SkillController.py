@@ -23,7 +23,6 @@ def listar_skills_endpoint(
 ):
     try:
         skills = SkillService.listar()
-        # Filtrado automático usando los campos no nulos del DTO
         for field, value in filtros.model_dump(exclude_none=True).items():
             skills = [s for s in skills if s.get(field) == value]
         return skills[skip:skip + limit]

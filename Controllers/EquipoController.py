@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from typing import List
+from Dtos.MensajeRespuesta import MensajeRespuesta
 from Services.EquipoService import EquipoService
 from Dtos.Equipo.Equipo import Equipo
 from Dtos.Equipo.EquipoCreateDto import EquipoCreateDto
@@ -57,7 +58,7 @@ def actualizar_equipo(equipo_id: str, data: EquipoUpdateDto):
         raise HTTPException(status_code=500, detail="Error al actualizar equipo")
 
 
-@equipo_router.delete("/{equipo_id}")
+@equipo_router.delete("/{equipo_id}", response_model=MensajeRespuesta)
 def eliminar_equipo(equipo_id: str):
     try:
         if not EquipoService.obtener_por_id(equipo_id):
@@ -70,7 +71,7 @@ def eliminar_equipo(equipo_id: str):
         raise HTTPException(status_code=500, detail="Error al eliminar equipo")
 
 
-@equipo_router.patch("/{equipo_id}/remover_integrante/{usuario_id}")
+@equipo_router.patch("/{equipo_id}/remover_integrante/{usuario_id}", response_model=MensajeRespuesta)
 def remover_integrante(equipo_id: str, usuario_id: str):
     try:
         EquipoService.eliminar_integrante(equipo_id, usuario_id)
@@ -81,11 +82,11 @@ def remover_integrante(equipo_id: str, usuario_id: str):
         raise HTTPException(status_code=500, detail="Error al remover integrante")
 
 
-@equipo_router.patch("/{equipo_id}/agregar_integrante/{usuario_id}")
+@equipo_router.patch("/{equipo_id}/agregar_integrante/{usuario_id}", response_model=MensajeRespuesta)
 def agregar_integrante(equipo_id: str, usuario_id: str):
     try:
         equipo = EquipoService.agregar_integrante(equipo_id, usuario_id)
-        return {"message": "Integrante agregado correctamente", "equipo": equipo}
+        return {"message": "Integrante agregado correctamente"}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception:

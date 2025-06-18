@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import List
+from Dtos.MensajeRespuesta import MensajeRespuesta
 from Services.EmpresaService import EmpresaService
 from Dtos.Empresa.EmpresaCreateDto import EmpresaCreateDto
 from Dtos.Empresa.Empresa import Empresa
@@ -70,7 +71,7 @@ def actualizar_empresa(empresa_id: str, data: EmpresaUpdateDto):
         raise HTTPException(status_code=500, detail=f"Error al actualizar empresa: {e}")
 
 
-@empresa_router.delete("/{empresa_id}")
+@empresa_router.delete("/{empresa_id}", response_model=MensajeRespuesta)
 def eliminar_empresa(empresa_id: str):
     try:
         if not EmpresaService.obtener_por_id(empresa_id):

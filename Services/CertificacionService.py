@@ -92,7 +92,7 @@ class CertificacionService:
                 participante=str(cert_dict["participante"]),
                 curso_id=str(cert_dict["curso"]),
                 puntaje=cert_dict.get("puntaje"),
-                aprobada=cert_dict.get("aprobada"))))
+                aprobada=cert_dict.get("aprobada"))
 
         cert_dict["curso"] = str(cert_dict["curso"])
         cert_dict["participante"] = str(cert_dict["participante"])

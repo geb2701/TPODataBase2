@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from typing import List
+from Dtos.MensajeRespuesta import MensajeRespuesta
 from Dtos.ProcesoSeleccion.ProcesoSeleccionCreateDto import ProcesoSeleccionCreateDto
 from Dtos.ProcesoSeleccion.ProcesoSeleccionDto import ProcesoSeleccionDto
 from Dtos.ProcesoSeleccion.ProcesoSeleccionUpdateDto import ProcesoSeleccionUpdateDto
@@ -44,7 +45,7 @@ def actualizar_proceso(proceso_id: str, data: ProcesoSeleccionUpdateDto):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@procesos_router.delete("/{proceso_id}")
+@procesos_router.delete("/{proceso_id}", response_model=MensajeRespuesta)
 def eliminar_proceso(proceso_id: str):
     try:
         ProcesoSeleccionService.eliminar(proceso_id)
