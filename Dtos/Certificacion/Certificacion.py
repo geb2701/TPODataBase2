@@ -8,4 +8,3 @@ class Certificacion(BaseModel):
     participante: str
     puntaje: float
     aprobada: bool
-    fecha_emision: date
