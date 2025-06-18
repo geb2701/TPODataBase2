@@ -35,10 +35,10 @@ class EquipoService:
 
     @staticmethod
     def crear(data):
-        historial = equipo_collection.get("historial", [])
+        historial = data.get("historial", [])
         hoy = datetime.today()
         historial.append(Historial(fecha=hoy, mensage="Equipo creado").model_dump())
-        equipo_collection["historial"] = historial
+        data["historial"] = historial
 
         EquipoService._validar_usuarios_existentes(data.get("integrantes", []))
         result = equipo_collection.insert_one(data)

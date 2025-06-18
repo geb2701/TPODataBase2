@@ -3,7 +3,7 @@ from Dtos.MensajeRespuesta import MensajeRespuesta
 from Dtos.Usuario.ReferirDto import ReferirDto
 
 from Services.UsuarioServices import UsuarioService
-referencia_usuario_router = APIRouter(prefix="/usuarios", tags=["Referencias entre Usuarios"])
+referencia_usuario_router = APIRouter(prefix="/ReferirUsuarios", tags=["Referencias entre Usuarios"])
 
 @referencia_usuario_router.patch("/referir", response_model=MensajeRespuesta)
 def referir_usuario_endpoint(data: ReferirDto):
