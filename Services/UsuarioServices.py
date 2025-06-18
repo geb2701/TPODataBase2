@@ -1,5 +1,7 @@
+from datetime import datetime
 from bson import ObjectId
 from neo4j import GraphDatabase
+from Dtos.Historial import Historial
 from Services.DatabaseConfig import DatabaseConfig
 
 db_config = DatabaseConfig()
@@ -9,9 +11,8 @@ usuarios_collection = mongo_db["usuarios"]
 
 
 class UsuarioService:
-
     @staticmethod
-    def _mongo_to_dto(usuario):
+    def mongo_to_dto(usuario):
         usuario["id"] = str(usuario["_id"])
         usuario.pop("_id", None)
         return usuario
@@ -36,17 +37,29 @@ class UsuarioService:
     @staticmethod
     def listar():
         usuarios = list(usuarios_collection.find())
-        return [UsuarioService._mongo_to_dto(u) for u in usuarios]
+        return [UsuarioService.mongo_to_dto(u) for u in usuarios]
 
     @staticmethod
     def obtener_por_id(usuario_id):
         usuario = usuarios_collection.find_one({"_id": ObjectId(usuario_id)})
         if usuario:
-            return UsuarioService._mongo_to_dto(usuario)
+            return UsuarioService.mongo_to_dto(usuario)
         return None
 
     @staticmethod
     def actualizar(usuario_id, update_data):
+        usuario = usuarios_collection.find_one({"_id": ObjectId(usuario_id)})
+        if not usuario:
+            return None
+
+        historial = usuario.get("historial", [])
+        hoy = datetime.today()
+        for campo, nuevo_valor in update_data.items():
+            valor_anterior = usuario.get(campo, None)
+            mensaje = f"Se cambió '{campo}' de '{valor_anterior}' a '{nuevo_valor}'"
+            historial.append(Historial(fecha=hoy, mensage=mensaje).model_dump())
+        update_data["historial"] = historial
+
         result = usuarios_collection.update_one(
             {"_id": ObjectId(usuario_id)},
             {"$set": update_data}
@@ -55,18 +68,19 @@ class UsuarioService:
             return None
 
         usuario = usuarios_collection.find_one({"_id": ObjectId(usuario_id)})
-        usuario_dto = UsuarioService._mongo_to_dto(usuario)
-
+        usuario_dto = usuario_mongo_to_model(usuario)
+        # Actualizar nodo en Neo4j
         with neo4j.session() as session:
+            props = {k: v for k, v in update_data.items() if v is not None and k != "historial"}
             session.run(
                 """
                 MATCH (u:Usuario {id: $id})
                 SET u += $props
                 """,
                 id=usuario_id,
-                props={k: v for k, v in update_data.items() if v is not None}
+                props=props
             )
-
+            
             if "recomendado" in update_data and isinstance(update_data["recomendado"], list):
                 for recomendado_id in update_data["recomendado"]:
                     session.run(
@@ -77,7 +91,7 @@ class UsuarioService:
                         recomendador_id=usuario_id,
                         recomendado_id=recomendado_id
                     )
-
+            
             if "skills" in update_data and isinstance(update_data["skills"], list):
                 for skill_id in update_data["skills"]:
                     session.run(
@@ -85,10 +99,10 @@ class UsuarioService:
                         MERGE (s:Skill {id: $skill_id})
                         WITH s
                         MATCH (u:Usuario {id: $usuario_id})
-                        MERGE (u)-[:POSEE]->(s)
+                        MERGE (u)-[:DOMINA]->(s)
                         """,
                         usuario_id=usuario_id,
                         skill_id=skill_id
                     )
-
+                    
         return usuario_dto
