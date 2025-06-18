@@ -1,6 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Body
-from pydantic import BaseModel
-from typing import List, Optional
+from fastapi import FastAPI
 from Controllers.SkillController import skills_router
 from Controllers.UsuarioController import usuarios_router
 from Controllers.EquipoController import equipo_router
@@ -27,7 +25,4 @@ app.include_router(certificacion_router)
 app.include_router(oferta_router)
 app.include_router(procesos_router)
 
-
-
-app.include_router(certificacion_router)
 

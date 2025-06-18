@@ -1,4 +1,5 @@
-import datetime
+
+from datetime import datetime
 from Dtos.Historial import Historial
 from Services.DatabaseConfig import DatabaseConfig
 from bson import ObjectId, errors
