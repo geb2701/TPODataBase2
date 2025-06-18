@@ -4,10 +4,10 @@ from Dtos.Usuario.AgregarSkillDto import AgregarSkillDto
 
 from Services.UsuarioServices import UsuarioService
 
-skill_usuario_router = APIRouter(prefix="/usuarios", tags=["Skills de Usuario"])
+skill_usuario_router = APIRouter(prefix="/usuariosSkills", tags=["Skills de Usuario"])
 
-@skill_usuario_router.patch("/añadir_skill", response_model=MensajeRespuesta)
-def añadir_skill_endpoint(data: AgregarSkillDto):
+@skill_usuario_router.patch("/agregar_skill", response_model=MensajeRespuesta)
+def agregar_skill_endpoint(data: AgregarSkillDto):
     try:
         usuario = UsuarioService.obtener_por_id(data.usuarioId)
 
