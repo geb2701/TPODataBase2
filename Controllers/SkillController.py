@@ -4,18 +4,14 @@ from typing import List
 from Dtos.Skill.SkillFilterDto import SkillFilterDto 
 from Dtos.Skill.SkillCreateDto import SkillCreateDto
 from Dtos.Skill.Skill import Skill
-from Repositories.SkillRepository import (
-    crear_skill,
-    listar_skills,
-    obtener_skill
-)
+from Services.SkillService import SkillService
 
 skills_router = APIRouter(prefix="/skills", tags=["Skills"])
 
 @skills_router.post("/", response_model=Skill)
 def crear_skill_endpoint(skill: SkillCreateDto):
     try:
-        return crear_skill(skill.model_dump())
+        return SkillService.crear(skill.model_dump())
     except ValueError as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -26,7 +22,7 @@ def listar_skills_endpoint(
     filtros: SkillFilterDto = Depends()
 ):
     try:
-        skills = listar_skills()
+        skills = SkillService.listar()
         # Filtrado automático usando los campos no nulos del DTO
         for field, value in filtros.model_dump(exclude_none=True).items():
             skills = [s for s in skills if s.get(field) == value]
@@ -39,7 +35,7 @@ def listar_skills_endpoint(
 @skills_router.get("/{skill_id}", response_model=Skill)
 def obtener_skill_endpoint(skill_id: str):
     try:
-        skill = obtener_skill(skill_id)
+        skill = SkillService.obtener_por_id(skill_id)
         if not skill:
             raise HTTPException(404, "Skill no encontrada")
         return skill
