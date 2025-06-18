@@ -1,4 +1,4 @@
-from Dtos import Historial
+from Dtos.Historial import Historial
 from Services.DatabaseConfig import DatabaseConfig
 from bson import ObjectId, errors
 from datetime import datetime
@@ -14,7 +14,6 @@ def mongo_to_model(item):
     return item
 
 class EmpresaService:
-
     @staticmethod
     def crear(data):
         try:
@@ -27,16 +26,12 @@ class EmpresaService:
             empresa_id = str(result.inserted_id)
             data["id"] = empresa_id
 
-            # Neo4j
-            try:
-                with neo4j.session() as session:
-                    session.run(
-                        "CREATE (e:Empresa {id: $id, nombre: $nombre})",
-                        id=empresa_id,
-                        nombre=data.get("nombre", "")
-                    )
-            except Exception as e:
-                print(f"⚠️ Error registrando empresa en Neo4j: {e}")
+            with neo4j.session() as session:
+                session.run(
+                    "CREATE (e:Empresa {id: $id, nombre: $nombre})",
+                    id=empresa_id,
+                    nombre=data.get("nombre", "")
+                )
 
             return data
         except Exception as e:
@@ -65,25 +60,37 @@ class EmpresaService:
     @staticmethod
     def actualizar(empresa_id: str, data):
         try:
-            obj_id = ObjectId(empresa_id)
-            empresa_collection.update_one({"_id": obj_id}, {"$set": data})
+            usuario = empresa_collection.find_one({"_id": ObjectId(empresa_id)})
+            if not usuario:
+                return None
 
-            # Neo4j - actualizar nombre si está en el update
-            if "nombre" in data:
-                try:
-                    with neo4j.session() as session:
-                        session.run(
-                            """
-                            MATCH (e:Empresa {id: $empresa_id})
-                            SET e.nombre = $nuevo_nombre
-                            """,
-                            empresa_id=empresa_id,
-                            nuevo_nombre=data["nombre"]
-                        )
-                except Exception as e:
-                    print(f"⚠️ Error actualizando empresa en Neo4j: {e}")
+            historial = usuario.get("historial", [])
+            hoy = datetime.today()
+            for campo, nuevo_valor in data.items():
+                valor_anterior = usuario.get(campo, None)
+                if valor_anterior == nuevo_valor:
+                    continue
+                mensaje = f"Se cambió '{campo}' de '{valor_anterior}' a '{nuevo_valor}'"
+                historial.append(Historial(fecha=hoy, mensage=mensaje).model_dump())
+            data["historial"] = historial
 
-            return EmpresaService.obtener_por_id(empresa_id)
+            result = empresa_collection.update_one(
+                {"_id": ObjectId(empresa_id)},
+                {"$set": data}
+            )
+            result = mongo_to_model(usuario)
+            
+            with neo4j.session() as session:
+                session.run(
+                    """
+                    MATCH (e:Empresa {id: $empresa_id})
+                    SET e.nombre = $nuevo_nombre
+                    """,
+                    empresa_id=empresa_id,
+                    nuevo_nombre=data["nombre"]
+                )
+
+            return result
         except errors.InvalidId:
             raise ValueError("ID de empresa inválido")
         except Exception as e:

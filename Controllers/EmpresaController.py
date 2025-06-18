@@ -61,7 +61,7 @@ def actualizar_empresa(empresa_id: str, data: EmpresaUpdateDto):
     try:
         if not EmpresaService.obtener_por_id(empresa_id):
             raise HTTPException(status_code=404, detail="Empresa no encontrada")
-        return EmpresaService.actualizar(empresa_id, data.dict(exclude_unset=True))
+        return EmpresaService.actualizar(empresa_id, data.model_dump(exclude_unset=True))
     except HTTPException as e:
         raise e
     except ValueError as e:

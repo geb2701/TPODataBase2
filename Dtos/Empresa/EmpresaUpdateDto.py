@@ -1,7 +1,6 @@
 # EmpresaUpdateDto.py
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import Optional
 
 class EmpresaUpdateDto(BaseModel):
     nombre: Optional[str]
-    equipos: Optional[List[str]] = None

@@ -7,37 +7,44 @@ from Services.DatabaseConfig import DatabaseConfig
 db_config = DatabaseConfig()
 mongo_db = db_config.get_mongo_db()
 neo4j = db_config.get_neo4j_driver()
-usuarios_collection = mongo_db["usuarios"]
+skills_collection = mongo_db["skills"]
 
 
 class UsuarioService:
     @staticmethod
-    def mongo_to_model(usuario):
-        usuario["id"] = str(usuario["_id"])
-        usuario.pop("_id", None)
-        return usuario
+    def mongo_to_model(skill):
+        skill["id"] = str(skill["_id"])
+        skill.pop("_id", None)
+        return skill
 
     @staticmethod
-    def crear(usuario_dict):
-        historial = usuario_dict.get("historial", [])
+    def crear(data):
+        historial = data.get("historial", [])
         hoy = datetime.today()
         historial.append(Historial(fecha=hoy, mensage="Usuario creado").model_dump())
-        usuario_dict["historial"] = historial
+        data["historial"] = historial
 
-        result = usuarios_collection.insert_one(usuario_dict)
-        usuario_dict["id"] = str(result.inserted_id)
+        existente = skills_collection.find_one({
+            "tipo": data.get("tipo"),
+            "nivel": data.get("nivel")
+        })
+        if existente:
+            raise ValueError("Ya existe una skill con el mismo nombre y nivel.")
+
+        result = skills_collection.insert_one(data)
+        data["id"] = str(result.inserted_id)
 
         with neo4j.session() as session:
             session.run(
                 """
-                CREATE (u:Usuario {id: $id, nombre: $nombre, email: $email})
+                CREATE (s:Skill {id: $id, nombre: $nombre, nivel: $nivel})
                 """,
-                id=usuario_dict["id"],
-                nombre=usuario_dict.get("nombre", ""),
-                email=usuario_dict.get("email", "")
+                id=data["id"],
+                nombre=data.get("nombre"),
+                nivel=data.get("nivel"),
+                
             )
-
-        return usuario_dict
+        return data
 
     @staticmethod
     def listar():

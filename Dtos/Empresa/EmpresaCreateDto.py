@@ -4,4 +4,3 @@ from typing import List, Optional
 
 class EmpresaCreateDto(BaseModel):
     nombre: str
-    equipos: Optional[List[str]] = []
