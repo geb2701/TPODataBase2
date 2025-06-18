@@ -8,4 +8,3 @@ class ProcesoSeleccionCreateDto(BaseModel):
     candidato_id: str
     reclutador_id: str
     estado: str
-    historial: List[str] = Field(default_factory=list)

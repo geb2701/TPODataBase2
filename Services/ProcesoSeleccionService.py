@@ -17,7 +17,6 @@ class ProcesoSeleccionService:
     def _validar_referencias(data):
         # Validar existencia de las entidades referenciadas
         ids = {
-            "empresa_id": data.get("empresa_id"),
             "oferta_id": data.get("oferta_id"),
             "candidato_id": data.get("candidato_id"),
             "reclutador_id": data.get("reclutador_id")
@@ -29,7 +28,6 @@ class ProcesoSeleccionService:
 
         try:
             refs = {
-                "empresa": empresas.find_one({"_id": ObjectId(ids["empresa_id"])}),
                 "oferta": ofertas.find_one({"_id": ObjectId(ids["oferta_id"])}),
                 "candidato": usuarios.find_one({"_id": ObjectId(ids["candidato_id"])}),
                 "reclutador": usuarios.find_one({"_id": ObjectId(ids["reclutador_id"])})

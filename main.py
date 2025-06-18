@@ -9,7 +9,7 @@ from Controllers.SkillUsuarioController import skill_usuario_router
 from Controllers.ReferenciaUsuarioController import referencia_usuario_router
 from Controllers.CursoController import curso_router
 from Controllers.CertificacionController import certificacion_router
-from Controllers.ProcesoSeleccionController import procesos_router
+from Controllers.BuscarEmpleadoController import buscar_empleado_router
 
 
 app = FastAPI()
@@ -24,5 +24,7 @@ app.include_router(curso_router)
 app.include_router(certificacion_router)
 app.include_router(oferta_router)
 app.include_router(procesos_router)
+
+app.include_router(buscar_empleado_router)
 
 
