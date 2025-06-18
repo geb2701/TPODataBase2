@@ -136,10 +136,10 @@ class EquipoService:
 
     @staticmethod
     def obtener_por_id(equipo_id: str):
-        equipo = equipo_collection.find_one({"_id": equipo_id})
+        equipo = equipo_collection.find_one({"_id": ObjectId(equipo_id)})
         if not equipo:
             return None
-        EquipoService.mongo_to_model(equipo)
+        return EquipoService.mongo_to_model(equipo)
 
 
     @staticmethod
@@ -179,7 +179,7 @@ class EquipoService:
 
     @staticmethod
     def actualizar(equipo_id: str, update_data: dict):
-        equipo = equipo_collection.find_one({"_id": equipo_id})
+        equipo = equipo_collection.find_one({"_id": ObjectId(equipo_id)})
         if not equipo:
             raise ValueError("Equipo no encontrado")
         
@@ -259,7 +259,7 @@ class EquipoService:
                         equipo_id=equipo_id
                     )
 
-        return EquipoService.obtener_por_id(equipo_id)
+        return EquipoService.mongo_to_model(equipo)
 
     @staticmethod
     def eliminar(equipo_id: str):

@@ -50,7 +50,7 @@ def obtener_equipo(equipo_id: str):
 @equipo_router.patch("/{equipo_id}", response_model=Equipo)
 def actualizar_equipo(equipo_id: str, data: EquipoUpdateDto):
     try:
-        return EquipoService.actualizar(equipo_id, data.dict(exclude_unset=True))
+        return EquipoService.actualizar(equipo_id, data.model_dump())
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception:
